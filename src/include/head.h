@@ -5,7 +5,7 @@ struct Node_t
 {
     int type;
 
-    double data;
+    double value;
 
     struct Node_t* left;
     struct Node_t* right;
@@ -26,7 +26,7 @@ enum symbols
 
 enum operations
 {
-    PLS = '+',
+    ADD = '+',
     SUB = '-',
     DIV = '/'
 };

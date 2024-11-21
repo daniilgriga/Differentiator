@@ -10,6 +10,7 @@
 
 #include "log.h"
 #include "head.h"
+#include "eval.h"
 #include "color_print.h"
 
 #ifdef DEBUG
@@ -18,17 +19,21 @@
     #define ON_DBG(...)
 #endif
 
-struct Node_t* new_node  (int type, double data);
+struct Node_t* new_node   (int type, double value);
 
-int print_tree_preorder  (struct Node_t* root, FILE* filename);
+int print_tree_preorder   (struct Node_t* root, FILE* filename);
 
-int print_tree_postorder (struct Node_t* root);
+int print_tree_postorder  (struct Node_t* root);
 
-int print_tree_inorder   (struct Node_t* root);
+int print_tree_inorder    (struct Node_t* root);
 
-int delete_sub_tree      (struct Node_t* node);
+void printing_in_all_ways (struct Node_t* node);
+
+int delete_sub_tree       (struct Node_t* node);
 
 int buffer_dtor (struct Buffer_t* buffer);
+
+int destructor (struct Node_t* node, struct Buffer_t* buffer);
 
 void print_tree_preorder_for_file (struct Node_t* root, FILE* filename);
 
@@ -61,25 +66,17 @@ int main (int argc, const char* argv[])
 
     open_log_file ("../build/dump.html");
 
-    dump_in_log_file (root, "");
+    dump_in_log_file (root, "before eval");
 
-    printf ("\npreorder: ");
-    print_tree_preorder  (root, stdout);
+    printing_in_all_ways (root);
 
-    printf ("\npostorder: ");
-    print_tree_postorder (root);
+    printf ("\n""answer = %lg\n", eval (root));
 
-    printf ("\ninorder: ");
-    print_tree_inorder   (root);
-    printf ("\n");
-
-    dump_in_log_file (root, "end of programm");
+    dump_in_log_file (root, "after eval --- end of programm");
 
     close_log_file ();
 
-    delete_sub_tree (root);
-
-    buffer_dtor (&buffer);
+    destructor (root, &buffer);
 
     return 0;
 }
@@ -138,18 +135,18 @@ struct Node_t* read_node (int level, struct Buffer_t* buffer)
     int bgn = 0;
     int end = 0;
     sscanf (buffer->current_ptr, " %n%*[^()]%n %n", &bgn, &end, &n);
-    if (n < 0) { ON_DBG ( INDENT; printf ("No DATA found. Return NULL.\n"); ) return NULL; }
+    if (n < 0) { ON_DBG ( INDENT; printf ("No value found. Return NULL.\n"); ) return NULL; }
 
     char temp = 0;
     double temp_dbl = 0;
 
     if ( sscanf (buffer->current_ptr + bgn, "%lg", &temp_dbl) != 0)
     {
-        node->data = temp_dbl;
+        node->value = temp_dbl;
         node->type = NUM;
 
         ON_DBG ( INDENT; printf ("Got a NAME: '%lg'. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-        node->data, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+        node->value, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
         buffer->current_ptr += n;
 
@@ -159,7 +156,7 @@ struct Node_t* read_node (int level, struct Buffer_t* buffer)
     {
         sscanf (buffer->current_ptr + bgn, " %c ", &temp);
 
-        node->data = (int) temp;
+        node->value = (int) temp;
 
         if (temp == 'x')
             node->type = VAR;
@@ -167,7 +164,7 @@ struct Node_t* read_node (int level, struct Buffer_t* buffer)
             node->type = OP;
 
         ON_DBG ( INDENT; printf ("Got a NAME: '%c'. n = %d. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-                (int) node->data, n, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+                (int) node->value, n, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
         buffer->current_ptr += n;
 
@@ -188,8 +185,8 @@ struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t
     {
         buffer->current_ptr += n;
 
-        ON_DBG ( INDENT; printf ("Got a ')', SHORT Node END (data = '%lg'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-                node->data, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+        ON_DBG ( INDENT; printf ("Got a ')', SHORT Node END (value = '%lg'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
+                node->value, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
         return node;
     }
@@ -199,13 +196,13 @@ struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t
 
     node->left = read_node (level + 1, buffer);
 
-    ON_DBG ( INDENT; printf ("\n" "LEFT subtree read. Data of left root = '%lg'\n\n", node->left->data); )
+    ON_DBG ( INDENT; printf ("\n" "LEFT subtree read. value of left root = '%lg'\n\n", node->left->value); )
 
     ON_DBG ( printf ("Reading right node. Cur = %.10s...\n", buffer->current_ptr); )
 
     node->right = read_node (level + 1, buffer);
 
-    ON_DBG ( INDENT; printf ("\n" "RIGHT subtree read. Data of right root = '%lg'\n", node->right->data); )
+    ON_DBG ( INDENT; printf ("\n" "RIGHT subtree read. value of right root = '%lg'\n", node->right->value); )
 
     chr = '\0';
     sscanf (buffer->current_ptr, " %c %n", &chr, &n);
@@ -215,8 +212,8 @@ struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t
     {
         buffer->current_ptr += n;
 
-        ON_DBG ( INDENT; printf ("Got a ')', FULL Node END (data = '%lg'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-                node->data, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+        ON_DBG ( INDENT; printf ("Got a ')', FULL Node END (value = '%lg'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
+                node->value, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
         return node;
     }
@@ -230,7 +227,7 @@ struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t
 struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t* buffer)
 {
     ON_DBG ( INDENT; printf ("Shifted CURRENT_PTR: '%c'. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-            (int) node->data, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+            (int) node->value, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
     int n = -1;
     char chr = '\0';
@@ -241,8 +238,8 @@ struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t
     {
         buffer->current_ptr += n;
 
-        ON_DBG ( INDENT; printf ("Got a ')', SHORT Node END (data = '%c'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-                    (int) node->data, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+        ON_DBG ( INDENT; printf ("Got a ')', SHORT Node END (value = '%c'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
+                    (int) node->value, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
         return node;
     }
@@ -252,13 +249,13 @@ struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t
 
     node->left = read_node (level + 1, buffer);
 
-    ON_DBG ( INDENT; printf ("\n" "LEFT subtree read. Data of left root = '%c'\n\n", (int) node->left->data); )
+    ON_DBG ( INDENT; printf ("\n" "LEFT subtree read. value of left root = '%c'\n\n", (int) node->left->value); )
 
     ON_DBG ( printf ("Reading right node. Cur = %.10s...\n", buffer->current_ptr); )
 
     node->right = read_node (level + 1, buffer);
 
-    ON_DBG ( INDENT; printf ("\n" "RIGHT subtree read. Data of right root = '%c'\n", (int) node->right->data); )
+    ON_DBG ( INDENT; printf ("\n" "RIGHT subtree read. value of right root = '%c'\n", (int) node->right->value); )
 
     chr = '\0';
     sscanf (buffer->current_ptr, " %c %n", &chr, &n);
@@ -268,8 +265,8 @@ struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t
     {
         buffer->current_ptr += n;
 
-        ON_DBG ( INDENT; printf ("Got a ')', FULL Node END (data = '%c'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
-                                (int) node->data, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
+        ON_DBG ( INDENT; printf ("Got a ')', FULL Node END (value = '%c'). Return node. Cur = %.10s..., [%p]. buffer_ptr = [%p]\n",
+                                (int) node->value, buffer->current_ptr, buffer->current_ptr, buffer->buffer_ptr); )
 
         return node;
     }
@@ -280,19 +277,15 @@ struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t
     return NULL;
 }
 
-void dump_in_log_file (struct Node_t* node, const char* reason)
-{
-    make_graph (node);
-    write_log_file (reason);
-}
+#undef INDENT
 
-struct Node_t* new_node (int type, double data)
+struct Node_t* new_node (int type, double value)
 {
     struct Node_t* node = (struct Node_t*) calloc (1, sizeof(*node));
     assert (node); //FIXME
 
     node->type = type;
-    node->data = data;
+    node->value = value;
 
     node->left  = NULL;
     node->right = NULL;
@@ -300,14 +293,9 @@ struct Node_t* new_node (int type, double data)
     return node;
 }
 
-void clean_buffer(void)
-{
-    while((getchar()) != '\n') {;}
-}
-
 int delete_sub_tree (struct Node_t* node)
 {
-    node->data = 0;
+    node->value = 0;
     node->type = 0;
 
     if (node->left)  delete_sub_tree (node->left);
@@ -328,6 +316,12 @@ int buffer_dtor (struct Buffer_t* buffer)
     return 0;
 }
 
+int destructor (struct Node_t* node, struct Buffer_t* buffer)
+{
+    delete_sub_tree (node);
+    buffer_dtor (buffer);
+}
+
 int print_tree_preorder (struct Node_t* root, FILE* filename)
 {
     if (!root)
@@ -336,9 +330,9 @@ int print_tree_preorder (struct Node_t* root, FILE* filename)
     fprintf (filename, " ( ");
 
     if (root->type == NUM)
-        fprintf (filename, "%lg",  root->data);
+        fprintf (filename, "%lg",  root->value);
     else
-        fprintf (filename, "%c", (int) root->data);
+        fprintf (filename, "%c", (int) root->value);
 
     if (root->left)  print_tree_preorder (root->left,  filename);
 
@@ -361,9 +355,9 @@ int print_tree_postorder (struct Node_t* root)
     if (root->right) print_tree_postorder (root->right);
 
     if (root->type == NUM)
-        printf ("%lg",  root->data);
+        printf ("%lg",  root->value);
     else
-        printf ("%c", (int) root->data);
+        printf ("%c", (int) root->value);
 
     printf (" ) ");
 
@@ -380,15 +374,57 @@ int print_tree_inorder (struct Node_t* root)
     if (root->left)  print_tree_inorder (root->left);
 
     if (root->type == NUM)
-        printf ("%lg", root->data);
+        printf ("%lg", root->value);
     else
-        printf ("%c", (int) root->data);
+        printf ("%c", (int) root->value);
 
     if (root->right) print_tree_inorder (root->right);
 
     printf (" ) ");
 
     return 0;
+}
+
+void printing_in_all_ways (struct Node_t* node)
+{
+    printf ("\n\n");
+
+    printf ("\npreorder: ");
+    print_tree_preorder  (node, stdout);
+
+    printf ("\npostorder: ");
+    print_tree_postorder (node);
+
+    printf ("\ninorder: ");
+    print_tree_inorder   (node);
+
+    printf ("\n\n");
+}
+
+void print_tree_preorder_for_file (struct Node_t* root, FILE* filename)
+{
+    if (!root)
+        return ; //FIXME
+
+    if (root->type == NUM)
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | value = %.2g | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
+             root, root, root->type, root->value, root->left, root->right);
+    else if (root->type == OP)
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
+             root, root, root->type, (int) root->value, root->left, root->right);
+    else if (root->type == VAR)
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
+             root, root, root->type, (int) root->value, root->left, root->right);
+
+    if (root->left)
+        fprintf (filename, "node%p -> node%p\n;", root, root->left);
+
+    if (root->right)
+        fprintf (filename, "node%p -> node%p\n;", root, root->right);
+
+    if (root->left)  print_tree_preorder_for_file (root->left , filename);
+
+    if (root->right) print_tree_preorder_for_file (root->right, filename);
 }
 
 int make_graph (struct Node_t* root)
@@ -417,28 +453,13 @@ int make_graph (struct Node_t* root)
     return 0;
 }
 
-void print_tree_preorder_for_file (struct Node_t* root, FILE* filename)
+void dump_in_log_file (struct Node_t* node, const char* reason)
 {
-    if (!root)
-        return ; //FIXME
+    make_graph (node);
+    write_log_file (reason);
+}
 
-    if (root->type == NUM)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | data = %.2g | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
-             root, root, root->type, root->data, root->left, root->right);
-    else if (root->type == OP)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP) | data = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
-             root, root, root->type, (int) root->data, root->left, root->right);
-    else if (root->type == VAR)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | data = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
-             root, root, root->type, (int) root->data, root->left, root->right);
-
-    if (root->left)
-        fprintf (filename, "node%p -> node%p\n;", root, root->left);
-
-    if (root->right)
-        fprintf (filename, "node%p -> node%p\n;", root, root->right);
-
-    if (root->left)  print_tree_preorder_for_file (root->left , filename);
-
-    if (root->right) print_tree_preorder_for_file (root->right, filename);
+void clean_buffer(void)
+{
+    while((getchar()) != '\n') {;}
 }
