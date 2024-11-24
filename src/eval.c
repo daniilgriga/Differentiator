@@ -2,8 +2,9 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 
-#include "head.h"
+#include "tree.h"
 #include "eval.h"
 
 const double GlobalX = 2;
@@ -51,6 +52,28 @@ double eval (struct Node_t* node)
                 double res = eval (node->left) /
                              eval (node->right);
                 printf ("case DIV: result = %lg\n\n", res);
+                return res;
+            }
+
+            case MUL:
+            {
+                double res = eval (node->left) *
+                             eval (node->right);
+                printf ("case MUL: result = %lg\n\n", res);
+                return res;
+            }
+
+            case SIN:
+            {
+                double res = sin ( eval (node->left) );
+                printf ("case SIN: result = %lg\n\n", res);
+                return res;
+            }
+
+            case COS:
+            {
+                double res = cos ( eval (node->left) );
+                printf ("case COS: result = %lg\n\n", res);
                 return res;
             }
 

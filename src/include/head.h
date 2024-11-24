@@ -1,6 +1,8 @@
 #ifndef HEAD_H_
 #define HEAD_H_
 
+#include <math.h>
+
 struct Node_t
 {
     int type;
@@ -28,7 +30,12 @@ enum operations
 {
     ADD = '+',
     SUB = '-',
-    DIV = '/'
+    DIV = '/',
+    MUL = '*',
+    SIN = 's',
+    COS = 'c',
+    POW = '^',
+    LOG = 'l'
 };
 
 #endif
