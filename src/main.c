@@ -33,7 +33,7 @@ int main (int argc, const char* argv[]) //TODO - open texfile...
     dump_in_log_file (     root, "root --- end of programm");
     dump_in_log_file (diff_node, "diff_node --- end of programm");
 
-    tex_print (diff_node, "output.tex");
+    tex_print (root, diff_node, "output.tex");
     system ("pdflatex output.tex");
 
     close_log_file ();

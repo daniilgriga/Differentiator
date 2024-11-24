@@ -295,23 +295,60 @@ int print_tree_postorder (struct Node_t* root)
     return 0;
 }
 
+int its_func_is_root (struct Node_t* root)
+{
+    if (root->type == OP && (int) root->value == 's')
+        return 1;
+
+    if (root->type == OP && (int) root->value == 'c')
+        return 1;
+
+    return 0;
+}
+
+void print_func (struct Node_t* root, FILE* file)
+{
+    if ( (int) root->value == 's')
+        fprintf (file, "sin ");
+
+    if ( (int) root->value == 'c')
+        fprintf (file, "cos ");
+
+   if (root->left)
+    {
+        fprintf (file, " {( ");
+        print_tree_inorder (root->left, root, file);
+        fprintf (file, " )} ");
+    }
+}
+
 int print_tree_inorder (struct Node_t* root, struct Node_t* parent, FILE* file)
 {
     if (!root)
         return 1; //FIXME
 
+    if (its_func_is_root (root))
+    {
+        print_func (root, file);
+        return 0;
+    }
+
     bool brackets = (root->left != NULL && root->right != NULL);
 
     if (root && parent && root->type == OP && parent->type == OP)
-        if (priority (root->value) > priority (parent->value))
+        if (priority (root->value) >= priority (parent->value))
             brackets = 0;
+
+    if (parent == NULL)
+        brackets = 0;
 
     if (root->type == OP)
         if (root->value == DIV)
             brackets = 0;
 
-    if (parent == NULL)
-        brackets = 0;
+    if (root->type == OP)
+        if (root->value == POW)
+            brackets = 0;
 
     if (brackets)
         fprintf (file, " ( ");
@@ -354,12 +391,16 @@ int priority (int op)
     switch (op)
     {
         case ADD:
-        case SUB: return 1;
+        case SUB: return 3;
 
         case MUL:
-        case DIV: return 2;
+        case DIV: return 4;
 
-        case POW: return 3;
+        case POW: return 2;
+
+        case SIN: return 1;
+
+        case COS: return 1;
 
         default:
             printf ("priority of operation %d (%c) dont exists\n", op, op);
@@ -435,17 +476,22 @@ int make_graph (struct Node_t* root)
     return 0;
 }
 
-void tex_print (struct Node_t* root, const char* filename)
+
+void tex_print (struct Node_t* root, struct Node_t* diff_node, const char* filename)
 {
     FILE* file = fopen (filename, "wb");
 
     fprintf (file, "\\documentclass{article}\n");
     fprintf (file, "\\begin{document}\n");
-    fprintf (file, "\\section{Introduction}\n");
+    fprintf (file, "\\section{Differentiator}\n");
     fprintf (file, "wazzzuuuup, shut up and take my money:");
 
     fprintf (file, "$$ ");
     print_tree_inorder (root, NULL, file);
+
+    fprintf (file, " = ");
+
+    print_tree_inorder (diff_node, NULL, file);
     fprintf (file, " $$\n");
 
     fprintf (file, "\\end{document}\n");

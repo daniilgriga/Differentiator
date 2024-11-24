@@ -43,9 +43,13 @@ int print_tree_postorder  (struct Node_t* root);
 
 int print_tree_inorder    (struct Node_t* root, struct Node_t* parent, FILE* file);
 
-void tex_print            (struct Node_t* root, const char* filename);
+void tex_print            (struct Node_t* root, struct Node_t* diff_node, const char* filename);
 
 int priority (int op);
+
+int its_func_is_root (struct Node_t* root);
+
+void print_func (struct Node_t* root, FILE* file);
 
 void printing_in_all_ways (struct Node_t* node);
 
