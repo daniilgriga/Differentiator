@@ -22,10 +22,10 @@ int log_printf (const char* message, ...)
 
 FILE* open_log_file (const char* filename)
 {
-    LOG_FILE = fopen (filename, "w");
+    LOG_FILE = fopen (filename, "wb");
     if (LOG_FILE == NULL)
     {
-        printf("ERROR open dump file in %s\n", __FILE__);
+        printf("ERROR");
         return NULL;
     }
 

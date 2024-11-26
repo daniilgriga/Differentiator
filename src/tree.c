@@ -320,6 +320,78 @@ void print_func (struct Node_t* root, FILE* file)
         print_tree_inorder (root->left, root, file);
         fprintf (file, " )} ");
     }
+} //TODO - in tex func add tex_printf
+
+int print_tree_inorder_in_tex (struct Node_t* root, struct Node_t* parent, FILE* file)
+{
+    if (!root)
+        return 1; //FIXME
+
+    if (its_func_is_root (root))
+    {
+        print_func (root, file);
+        return 0;
+    }
+
+    bool brackets = (root->left != NULL && root->right != NULL);
+
+    if (root && parent && root->type == OP && parent->type == OP)
+        if (priority (root->value) >= priority (parent->value))
+            brackets = 0;
+
+    if (parent == NULL)
+        brackets = 0;
+
+    if (root->type == OP)
+        if (root->value == DIV)
+            brackets = 0;
+
+    if (root->type == OP)
+        if (root->value == POW)
+            brackets = 0;
+
+    if (root->type == OP)
+        if (root->value == SUB)
+            brackets = 0;
+
+    if (root->type == NUM)
+        if (root->value == -1)
+            brackets = 1;
+
+    if (brackets)
+        fprintf (file, " ( ");
+
+    if (root->left)
+    {
+        fprintf (file, " { ");
+        print_tree_inorder (root->left, root, file);
+        fprintf (file, " } ");
+    }
+
+    if (root->type == NUM)
+        fprintf (file, " %lg ", root->value);
+    else
+    {
+        if (root->type == OP && root->value == MUL)
+            fprintf (file, " \\cdot ");
+        else
+        if (root->type == OP && root->value == DIV)
+            fprintf (file, " \\over ");
+        else
+            fprintf (file, " %c ", (int) root->value);
+    }
+
+    if (root->right)
+    {
+        fprintf (file, " { ");
+        print_tree_inorder (root->right, root, file);
+        fprintf (file, " } ");
+    }
+
+    if (brackets)
+        fprintf (file, " ) ");
+
+    return 0;
 }
 
 int print_tree_inorder (struct Node_t* root, struct Node_t* parent, FILE* file)
@@ -350,15 +422,23 @@ int print_tree_inorder (struct Node_t* root, struct Node_t* parent, FILE* file)
         if (root->value == POW)
             brackets = 0;
 
+    if (root->type == OP)
+        if (root->value == SUB)
+            brackets = 0;
+
+    if (root->type == NUM)
+        if (root->value == -1)
+            brackets = 1;
+
     if (brackets)
         fprintf (file, " ( ");
 
     if (root->left)
-        {
-        fprintf (file, " { ");
+    {
+        fprintf (file, " ( ");
         print_tree_inorder (root->left, root, file);
-        fprintf (file, " } ");
-        }
+        fprintf (file, " ( ");
+    }
 
     if (root->type == NUM)
         fprintf (file, " %lg ", root->value);
@@ -374,17 +454,24 @@ int print_tree_inorder (struct Node_t* root, struct Node_t* parent, FILE* file)
     }
 
     if (root->right)
-        {
-        fprintf (file, " { ");
+    {
+        fprintf (file, " ( ");
         print_tree_inorder (root->right, root, file);
-        fprintf (file, " } ");
-        }
+        fprintf (file, " ( ");
+    }
 
     if (brackets)
         fprintf (file, " ) ");
 
     return 0;
 }
+
+/*если зашел в число верни нуль
+           в ИКС   верни АДИН
+           в опер  левый правый поддерево посетил посчитал верни сумму кол-во иксов
+
+           степень левом есть иксы то она степенная поу, если в правом есть иксы то она показательная (добавить паупау)
+           если и там и там, то крокодильчик*/
 
 int priority (int op)
 {
@@ -393,8 +480,8 @@ int priority (int op)
         case ADD:
         case SUB: return 3;
 
-        case MUL:
-        case DIV: return 4;
+        case MUL: return 4;
+        case DIV: return 0;
 
         case POW: return 2;
 
@@ -476,27 +563,35 @@ int make_graph (struct Node_t* root)
     return 0;
 }
 
-
-void tex_print (struct Node_t* root, struct Node_t* diff_node, const char* filename)
+FILE* tex_file_open (const char* filename)
 {
     FILE* file = fopen (filename, "wb");
+    assert (file);
 
     fprintf (file, "\\documentclass{article}\n");
     fprintf (file, "\\begin{document}\n");
     fprintf (file, "\\section{Differentiator}\n");
-    fprintf (file, "wazzzuuuup, shut up and take my money:");
+    fprintf (file, "wazzzuuuup, shut up and take my money.\n");
 
-    fprintf (file, "$$ ");
-    print_tree_inorder (root, NULL, file);
+    return file;
+}
 
-    fprintf (file, " = ");
-
-    print_tree_inorder (diff_node, NULL, file);
-    fprintf (file, " $$\n");
-
+void tex_file_close (FILE* file)
+{
     fprintf (file, "\\end{document}\n");
 
     fclose (file);
+}
+
+void tex_expression_print (struct Node_t* root, struct Node_t* diff_node, FILE* file)
+{
+    fprintf (file, "$$ ({");
+    print_tree_inorder (root, NULL, file);
+
+    fprintf (file, "})' = {");
+
+    print_tree_inorder (diff_node, NULL, file);
+    fprintf (file, "} $$\n");
 }
 
 void dump_in_log_file (struct Node_t* node, const char* reason)

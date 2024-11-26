@@ -35,15 +35,19 @@ enum operations
     LOG = 'l'
 };
 
-struct Node_t* new_node   (int type, double value, struct Node_t* node_left, struct Node_t* node_right);
+struct Node_t* new_node (int type, double value, struct Node_t* node_left, struct Node_t* node_right);
 
-int print_tree_preorder   (struct Node_t* root, FILE* filename);
+int print_tree_preorder    (struct Node_t* root, FILE* filename);
 
-int print_tree_postorder  (struct Node_t* root);
+int print_tree_postorder   (struct Node_t* root);
 
-int print_tree_inorder    (struct Node_t* root, struct Node_t* parent, FILE* file);
+int print_tree_inorder     (struct Node_t* root, struct Node_t* parent, FILE* file);
 
-void tex_print            (struct Node_t* root, struct Node_t* diff_node, const char* filename);
+void  tex_expression_print (struct Node_t* root, struct Node_t* diff_node, FILE* file);
+
+FILE* tex_file_open  (const char* filename);
+
+void  tex_file_close (FILE* file);
 
 int priority (int op);
 

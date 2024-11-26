@@ -27,13 +27,16 @@ int main (int argc, const char* argv[]) //TODO - open texfile...
 
     printing_in_all_ways (root);
 
-    struct Node_t* diff_node = diff (root);
+    FILE* tex_file = tex_file_open ("output.tex");
+
+    struct Node_t* diff_node = diff (root, tex_file);
     // printf ("\n""answer = %lg\n", eval (root));
 
     dump_in_log_file (     root, "root --- end of programm");
     dump_in_log_file (diff_node, "diff_node --- end of programm");
 
-    tex_print (root, diff_node, "output.tex");
+    tex_file_close (tex_file); // create_pdf_latex - fflush and system , atexit
+
     system ("pdflatex output.tex");
 
     close_log_file ();
