@@ -37,25 +37,21 @@ enum operations
 
 struct Node_t* new_node (int type, double value, struct Node_t* node_left, struct Node_t* node_right);
 
-int print_tree_preorder    (struct Node_t* root, FILE* filename);
+int print_tree_preorder    (struct Node_t* node, FILE* filename);
 
-int print_tree_postorder   (struct Node_t* root);
+int print_tree_postorder   (struct Node_t* node);
 
-int print_tree_inorder     (struct Node_t* root, struct Node_t* parent, FILE* file);
+int  tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent);
 
-void  tex_expression_print (struct Node_t* root, struct Node_t* diff_node, FILE* file);
+void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node);
 
-FILE* tex_file_open  (const char* filename);
-
-void  tex_file_close (FILE* file);
+void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message);
 
 int priority (int op);
 
-int its_func_is_root (struct Node_t* root);
+int its_func_is_root (struct Node_t* node);
 
-void print_func (struct Node_t* root, FILE* file);
-
-void printing_in_all_ways (struct Node_t* node);
+void print_func_in_tex (struct Node_t* node);
 
 int delete_sub_tree       (struct Node_t* node);
 
@@ -63,9 +59,9 @@ int buffer_dtor (struct Buffer_t* buffer);
 
 int destructor  (struct Node_t* node, struct Buffer_t* buffer);
 
-void print_tree_preorder_for_file (struct Node_t* root, FILE* filename);
+void print_tree_preorder_for_file (struct Node_t* node, FILE* filename);
 
-int make_graph  (struct Node_t* root);
+int make_graph  (struct Node_t* node);
 
 void clean_buffer (void);
 

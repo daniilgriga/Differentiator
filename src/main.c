@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "log.h"
+#include "tex.h"
 #include "tree.h"
 #include "eval.h"
 #include "diff.h"
@@ -25,17 +26,15 @@ int main (int argc, const char* argv[]) //TODO - open texfile...
 
     dump_in_log_file (root, "start of programm");
 
-    printing_in_all_ways (root);
+    open_tex_file ("output.tex");
 
-    FILE* tex_file = tex_file_open ("output.tex");
-
-    struct Node_t* diff_node = diff (root, tex_file);
+    struct Node_t* diff_node = diff (root);
     // printf ("\n""answer = %lg\n", eval (root));
 
     dump_in_log_file (     root, "root --- end of programm");
     dump_in_log_file (diff_node, "diff_node --- end of programm");
 
-    tex_file_close (tex_file); // create_pdf_latex - fflush and system , atexit
+    close_tex_file (); // create_pdf_latex - fflush and system , atexit
 
     system ("pdflatex output.tex");
 

@@ -4,7 +4,6 @@
 
 #include "tex.h"
 
-static struct Node_t* GlobalNode = NULL;
 static          FILE* GlobalTex  = NULL;
 
 FILE* open_tex_file (const char* filename)
@@ -19,7 +18,7 @@ FILE* open_tex_file (const char* filename)
     tex_printf ("\\documentclass{article}\n");
     tex_printf ("\\begin{document}\n");
     tex_printf ("\\section{Differentiator}\n");
-    tex_printf ("wazzzuuuup, shut up and take my money.\n");
+    tex_printf ("wazzzuuuup, shut up and take my money.\\newline ");
 
     return GlobalTex;
 }
@@ -34,6 +33,14 @@ int tex_printf (const char* message, ...)
     va_end (args);
 
     return 0;
+}
+
+void close_tex_file (void)
+{
+    tex_printf ("\\end{document}\n");
+
+    fflush (GlobalTex);
+    fclose (GlobalTex);
 }
 
 // void func (void) {}

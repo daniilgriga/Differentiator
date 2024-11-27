@@ -4,8 +4,6 @@
 #include "tree.h"
 #include "tex.h"
 
-struct Node_t* GlobalNode = NULL;
-
 struct Node_t* copy (struct Node_t* node);
 
 #define _ADD(left, right) new_node (OP, ADD, (left), (right))
@@ -17,16 +15,16 @@ struct Node_t* copy (struct Node_t* node);
 #define _COS(left, right) new_node (OP, COS, (left), (right))
 #define _NUM(value)       new_node (NUM, (value), NULL, NULL)
 
-#define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left, tex) )
+#define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left) )
 
 #define _L          node->left
 #define _R          node->right
-#define _dL   diff (node->left,  tex)
-#define _dR   diff (node->right, tex)
+#define _dL   diff (node->left)
+#define _dR   diff (node->right)
 #define _cL   copy (node->left)
 #define _cR   copy (node->right)
 
-struct Node_t* diff (struct Node_t* node, FILE* tex)
+struct Node_t* diff (struct Node_t* node)
 {
     if (node->type == NUM) return _NUM(0);
     if (node->type == VAR) return _NUM(1);
@@ -36,51 +34,36 @@ struct Node_t* diff (struct Node_t* node, FILE* tex)
             case ADD:
             {
                 struct Node_t* diff_node = _ADD (_dL, _dR);
-                /*if (GlobalNode == diff_node)
-                    fprintf (tex, "bro, sorry, but you'll have to look at this again: ");*/
-                fprintf (tex, "the derivative of the sum can be represented as follows:");
-                tex_expression_print (node, diff_node, tex);
 
-                GlobalNode = diff_node;
+                tex_printf_tree (node, diff_node, "the derivative of the sum can be represented as follows: ");
 
                 return diff_node;
             }
 
             case MUL:
             {
-                struct Node_t* diff_node = _ADD ( _MUL (_dL, _cR), _MUL (_cL, _dR));
-                /*if (GlobalNode == diff_node)
-                    fprintf (tex, "bro, sorry, but you'll have to look at this again: ");*/
-                fprintf (tex, "obviously, the derivative of multiplication looks like this: ");
-                tex_expression_print (node, diff_node, tex);
+                struct Node_t* diff_node = _ADD ( _MUL (_dL, _cR), _MUL (_cL, _dR) );
 
-                GlobalNode = diff_node;
+                tex_printf_tree (node, diff_node, "obviously, the derivative of multiplication looks like this: ");
 
                 return diff_node;
             }
 
             case DIV:
             {
-                fprintf (tex, "calculate the derivative of the fraction.\n");
+                tex_printf ("calculate the derivative of the fraction.\\newline ");
 
                 struct Node_t* u   = node->left;
-                struct Node_t* du  = diff (u, tex);
-                /*if (GlobalNode == du)
-                    fprintf (tex, "bro, sorry, but you'll have to look at this again: ");*/
-                fprintf (tex, "the derivative of the numerator is calculated as follows: ");
-                tex_expression_print (u, du, tex);
-                GlobalNode = du;
+                struct Node_t* du  = diff (u);
+
+                tex_printf_tree (u, du, "the derivative of the numerator is calculated as follows: ");
 
                 struct Node_t* cu  = copy (u);
 
                 struct Node_t* v   = node->right;
-                struct Node_t* dv  = diff (v, tex);
-                /*if (GlobalNode == dv)
-                    fprintf (tex, "bro, sorry, but you'll have to look at this again: ");*/
-                fprintf (tex, "karzhemanov said that the denominator is equal to: ");
-                tex_expression_print (v, dv, tex);
+                struct Node_t* dv  = diff (v);
 
-                GlobalNode = dv;
+                tex_printf_tree (v, dv, "Karzhemanov said that the denominator is equal to: ");
 
                 struct Node_t* cv  = copy (v);
 
@@ -94,19 +77,37 @@ struct Node_t* diff (struct Node_t* node, FILE* tex)
 
                 struct Node_t* diff_node = _DIV (duv_udv, v2);
 
-                fprintf (tex, "final differentiated fraction: ");
-                tex_expression_print (node, diff_node, tex);
+                tex_printf_tree (node, diff_node, "final differentiated fraction: ");
 
                 return diff_node;
             }
 
-            case POW: return _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB (_cR, _NUM(1) )))); // here
+            case POW:
+            {
+                struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB (_cR, _NUM(1) ) ) ) );
 
-            case SIN: return _COMPOUND ( _COS ( _cL, _cR) );
+                tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ");
 
-            case COS: return _COMPOUND ( _MUL ( _SIN ( _cL, _cR), _NUM(-1) ) );
+                return diff_node;
+            }
 
+            case SIN:
+            {
+                struct Node_t* diff_node = _COMPOUND ( _COS ( _cL, _cR) );
 
+                tex_printf_tree (node, diff_node, "every kindergartener in the USSR knew that: ");
+
+                return diff_node;
+            }
+
+            case COS:
+            {
+                struct Node_t* diff_node = _COMPOUND ( _MUL ( _SIN ( _cL, _cR), _NUM(-1) ) );
+
+                tex_printf_tree (node, diff_node, "Ostap once said: ");
+
+                return diff_node;
+            }
 
             default:
                 printf ("unknown operation %c (%d)", (int) node->value, (int) node->value);

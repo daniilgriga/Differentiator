@@ -12,7 +12,10 @@
 #include "tree.h"
 #include "eval.h"
 #include "diff.h"
+#include "tex.h"
 #include "color_print.h"
+
+static struct Node_t* GlobalNode = NULL;
 
 #ifdef DEBUG
     #define ON_DBG(...) __VA_ARGS__
@@ -117,6 +120,9 @@ struct Node_t* read_node (int level, struct Buffer_t* buffer)
 
 struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t* buffer)
 {
+    assert (node   &&   "node is NULL in read_double_func");
+    assert (buffer && "buffer is NULL in read_double_func");
+
     int n = -1;
     char chr = '\0';
     sscanf (buffer->current_ptr, " %c %n", &chr, &n);
@@ -135,13 +141,13 @@ struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t
 
     node->left = read_node (level + 1, buffer);
 
-    ON_DBG ( PRINT ("LEFT subtree read. value of left root = '%lg'", node->left->value); )
+    ON_DBG ( PRINT ("LEFT subtree read. value of left node = '%lg'", node->left->value); )
 
     ON_DBG ( PRINT ("Reading right node."); )
 
     node->right = read_node (level + 1, buffer);
 
-    ON_DBG ( PRINT ("RIGHT subtree read. value of right root = '%lg'", node->right->value); )
+    ON_DBG ( PRINT ("RIGHT subtree read. value of right node = '%lg'", node->right->value); )
 
     chr = '\0';
     sscanf (buffer->current_ptr, " %c %n", &chr, &n);
@@ -163,6 +169,9 @@ struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t
 
 struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t* buffer)
 {
+    assert (node   &&   "node is NULL in read_symbol_func");
+    assert (buffer && "buffer is NULL in read_symbol_func");
+
     int n = -1;
     char chr = '\0';
     sscanf (buffer->current_ptr, " %c %n", &chr, &n);
@@ -181,13 +190,13 @@ struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t
 
     node->left = read_node (level + 1, buffer);
 
-    ON_DBG ( PRINT ("LEFT subtree read. value of left root = '%c' (%lg), TYPE %d", (int) node->left->value, node->left->value, node->left->type); )
+    ON_DBG ( PRINT ("LEFT subtree read. value of left node = '%c' (%lg), TYPE %d", (int) node->left->value, node->left->value, node->left->type); )
 
     ON_DBG ( PRINT ("Reading right node."); )
 
     node->right = read_node (level + 1, buffer);
 
-    ON_DBG ( PRINT ("RIGHT subtree read. value of right root = '%c' (%lg), TYPE %d", (int) node->right->value, node->right->value, node->right->type); )
+    ON_DBG ( PRINT ("RIGHT subtree read. value of right node = '%c' (%lg), TYPE %d", (int) node->right->value, node->right->value, node->right->type); )
 
     chr = '\0';
     sscanf (buffer->current_ptr, " %c %n", &chr, &n);
@@ -249,229 +258,196 @@ int buffer_dtor (struct Buffer_t* buffer)
 
 int destructor (struct Node_t* node, struct Buffer_t* buffer)
 {
+    assert (node);
+    assert (buffer);
+
     delete_sub_tree (node);
     buffer_dtor (buffer);
 }
 
-int print_tree_preorder (struct Node_t* root, FILE* file)
+int print_tree_preorder (struct Node_t* node, FILE* file)
 {
-    if (!root)
-        return 1; //FIXME
+    assert (node);
+    assert (file);
 
     fprintf (file, " ( ");
 
-    if (root->type == NUM)
-        fprintf (file, "%lg",  root->value);
+    if (node->type == NUM)
+        fprintf (file, "%lg",  node->value);
     else
-        fprintf (file, "%c", (int) root->value);
+        fprintf (file, "%c", (int) node->value);
 
-    if (root->left)  print_tree_preorder (root->left,  file);
+    if (node->left)  print_tree_preorder (node->left,  file);
 
-    if (root->right) print_tree_preorder (root->right, file);
+    if (node->right) print_tree_preorder (node->right, file);
 
     fprintf (file, " ) ");
 
     return 0;
 }
 
-int print_tree_postorder (struct Node_t* root)
+int print_tree_postorder (struct Node_t* node)
 {
-    if (!root)
-        return 1; //FIXME
+    assert (node);
 
     printf (" ( ");
 
-    if (root->left)  print_tree_postorder (root->left);
+    if (node->left)  print_tree_postorder (node->left);
 
-    if (root->right) print_tree_postorder (root->right);
+    if (node->right) print_tree_postorder (node->right);
 
-    if (root->type == NUM)
-        printf ("%lg",  root->value);
+    if (node->type == NUM)
+        printf ("%lg",  node->value);
     else
-        printf ("%c", (int) root->value);
+        printf ("%c", (int) node->value);
 
     printf (" ) ");
 
     return 0;
 }
 
-int its_func_is_root (struct Node_t* root)
+int its_func_is_root (struct Node_t* node)
 {
-    if (root->type == OP && (int) root->value == 's')
+    assert (node);
+
+    if (node->type == OP && (int) node->value == 's')
         return 1;
 
-    if (root->type == OP && (int) root->value == 'c')
+    if (node->type == OP && (int) node->value == 'c')
         return 1;
 
     return 0;
 }
 
-void print_func (struct Node_t* root, FILE* file)
+void print_func_in_tex (struct Node_t* node)
 {
-    if ( (int) root->value == 's')
-        fprintf (file, "sin ");
+    assert (node && "node is NULL in print_func");
 
-    if ( (int) root->value == 'c')
-        fprintf (file, "cos ");
+    if ( (int) node->value == 's')
+        tex_printf ("sin ");
 
-   if (root->left)
+    if ( (int) node->value == 'c')
+        tex_printf ("cos ");
+
+   if (node->left)
     {
-        fprintf (file, " {( ");
-        print_tree_inorder (root->left, root, file);
-        fprintf (file, " )} ");
+        tex_printf (" { ");
+        tex_printf_tree_inorder (node->left, node);
+        tex_printf (" } ");
     }
-} //TODO - in tex func add tex_printf
+}
 
-int print_tree_inorder_in_tex (struct Node_t* root, struct Node_t* parent, FILE* file)
+int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
 {
-    if (!root)
-        return 1; //FIXME
+    assert (node && "node is NULL in tex_printf_tree_inorder");
 
-    if (its_func_is_root (root))
+    if (its_func_is_root (node))
     {
-        print_func (root, file);
+        print_func_in_tex (node);
         return 0;
     }
 
-    bool brackets = (root->left != NULL && root->right != NULL);
+    bool brackets = (node->left != NULL && node->right != NULL);
 
-    if (root && parent && root->type == OP && parent->type == OP)
-        if (priority (root->value) >= priority (parent->value))
+    if (node && parent && node->type == OP && parent->type == OP)
+        if (priority (node->value) >= priority (parent->value))
             brackets = 0;
 
     if (parent == NULL)
         brackets = 0;
 
-    if (root->type == OP)
-        if (root->value == DIV)
+    if (node->type == OP)
+        if (node->value == DIV)
             brackets = 0;
 
-    if (root->type == OP)
-        if (root->value == POW)
+    if (node->type == OP)
+        if (node->value == POW)
             brackets = 0;
 
-    if (root->type == OP)
-        if (root->value == SUB)
+    if (node->type == OP)
+        if (node->value == POW)
+            if (node->left->value == COS)
+                brackets = 1;
+
+    if (node->type == OP)
+        if (node->value == POW)
+            if (node->left->value == SIN)
+                brackets = 1;
+
+    if (node->type == OP)
+        if (node->value == SUB)
             brackets = 0;
 
-    if (root->type == NUM)
-        if (root->value == -1)
+    if (node->type == NUM)
+        if (node->value == -1)
             brackets = 1;
 
     if (brackets)
-        fprintf (file, " ( ");
+        tex_printf (" ( ");
 
-    if (root->left)
+    if (node->left)
     {
-        fprintf (file, " { ");
-        print_tree_inorder (root->left, root, file);
-        fprintf (file, " } ");
+        tex_printf (" { ");
+        tex_printf_tree_inorder (node->left, node);
+        tex_printf (" } ");
     }
 
-    if (root->type == NUM)
-        fprintf (file, " %lg ", root->value);
+    if (node->type == NUM)
+        tex_printf (" %lg ", node->value);
     else
     {
-        if (root->type == OP && root->value == MUL)
-            fprintf (file, " \\cdot ");
+        if (node->type == OP && node->value == MUL)
+            tex_printf (" \\cdot ");
         else
-        if (root->type == OP && root->value == DIV)
-            fprintf (file, " \\over ");
+        if (node->type == OP && node->value == DIV)
+            tex_printf (" \\over ");
         else
-            fprintf (file, " %c ", (int) root->value);
+            tex_printf (" %c ", (int) node->value);
     }
 
-    if (root->right)
+    if (node->right)
     {
-        fprintf (file, " { ");
-        print_tree_inorder (root->right, root, file);
-        fprintf (file, " } ");
+        tex_printf (" { ");
+        tex_printf_tree_inorder (node->right, node);
+        tex_printf (" } ");
     }
 
     if (brackets)
-        fprintf (file, " ) ");
+        tex_printf (" ) ");
 
     return 0;
 }
 
-int print_tree_inorder (struct Node_t* root, struct Node_t* parent, FILE* file)
+void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node)
 {
-    if (!root)
-        return 1; //FIXME
+    assert (node);
+    assert (diff_node);
 
-    if (its_func_is_root (root))
-    {
-        print_func (root, file);
-        return 0;
-    }
+    tex_printf ("$$ ({");
+    tex_printf_tree_inorder (node, NULL);
 
-    bool brackets = (root->left != NULL && root->right != NULL);
+    tex_printf ("})' = {");
 
-    if (root && parent && root->type == OP && parent->type == OP)
-        if (priority (root->value) >= priority (parent->value))
-            brackets = 0;
-
-    if (parent == NULL)
-        brackets = 0;
-
-    if (root->type == OP)
-        if (root->value == DIV)
-            brackets = 0;
-
-    if (root->type == OP)
-        if (root->value == POW)
-            brackets = 0;
-
-    if (root->type == OP)
-        if (root->value == SUB)
-            brackets = 0;
-
-    if (root->type == NUM)
-        if (root->value == -1)
-            brackets = 1;
-
-    if (brackets)
-        fprintf (file, " ( ");
-
-    if (root->left)
-    {
-        fprintf (file, " ( ");
-        print_tree_inorder (root->left, root, file);
-        fprintf (file, " ( ");
-    }
-
-    if (root->type == NUM)
-        fprintf (file, " %lg ", root->value);
-    else
-    {
-        if (root->type == OP && root->value == MUL)
-            fprintf (file, " \\cdot ");
-        else
-        if (root->type == OP && root->value == DIV)
-            fprintf (file, " \\over ");
-        else
-            fprintf (file, " %c ", (int) root->value);
-    }
-
-    if (root->right)
-    {
-        fprintf (file, " ( ");
-        print_tree_inorder (root->right, root, file);
-        fprintf (file, " ( ");
-    }
-
-    if (brackets)
-        fprintf (file, " ) ");
-
-    return 0;
+    tex_printf_tree_inorder (diff_node, NULL);
+    tex_printf ("} $$\n");
 }
 
-/*если зашел в число верни нуль
-           в ИКС   верни АДИН
-           в опер  левый правый поддерево посетил посчитал верни сумму кол-во иксов
+void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message)
+{
+    assert (node);
+    assert (diff_node);
+    assert (message);
 
-           степень левом есть иксы то она степенная поу, если в правом есть иксы то она показательная (добавить паупау)
-           если и там и там, то крокодильчик*/
+    if (GlobalNode != diff_node)
+    {
+        tex_printf ("%s", message);
+        tex_printf_expression (node, diff_node);
+    }
+    else
+        tex_printf ("%s... wait wait its the same, see above bro\\newline \\newline ", message);
+
+    GlobalNode = diff_node;
+}
 
 int priority (int op)
 {
@@ -495,51 +471,35 @@ int priority (int op)
     }
 }
 
-void printing_in_all_ways (struct Node_t* node)
+void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
 {
-    printf ("\n\n");
+    assert (node);
+    assert (filename);
 
-    printf ("\npreorder: ");
-    print_tree_preorder  (node, stdout);
-
-    printf ("\npostorder: ");
-    print_tree_postorder (node);
-
-    printf ("\ninorder: ");
-    print_tree_inorder   (node, NULL, stdout);
-
-    printf ("\n\n");
-}
-
-void print_tree_preorder_for_file (struct Node_t* root, FILE* filename)
-{
-    if (!root)
-        return ; //FIXME
-
-    if (root->type == NUM)
+    if (node->type == NUM)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | value = %g | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
-             root, root, root->type, root->value, root->left, root->right);
-    else if (root->type == OP)
+             node, node, node->type, node->value, node->left, node->right);
+    else if (node->type == OP)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
-             root, root, root->type, (int) root->value, root->left, root->right);
-    else if (root->type == VAR)
+             node, node, node->type, (int) node->value, node->left, node->right);
+    else if (node->type == VAR)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
-             root, root, root->type, (int) root->value, root->left, root->right);
+             node, node, node->type, (int) node->value, node->left, node->right);
 
-    if (root->left)
-        fprintf (filename, "node%p -> node%p\n;", root, root->left);
+    if (node->left)
+        fprintf (filename, "node%p -> node%p\n;", node, node->left);
 
-    if (root->right)
-        fprintf (filename, "node%p -> node%p\n;", root, root->right);
+    if (node->right)
+        fprintf (filename, "node%p -> node%p\n;", node, node->right);
 
-    if (root->left)  print_tree_preorder_for_file (root->left , filename);
+    if (node->left)  print_tree_preorder_for_file (node->left , filename);
 
-    if (root->right) print_tree_preorder_for_file (root->right, filename);
+    if (node->right) print_tree_preorder_for_file (node->right, filename);
 }
 
-int make_graph (struct Node_t* root)
+int make_graph (struct Node_t* node)
 {
-    assert (root);
+    assert (node);
 
     FILE* graph_file = fopen ("../build/graph_tree.dot", "w");
     if (graph_file == NULL)
@@ -552,7 +512,7 @@ int make_graph (struct Node_t* root)
 
     fprintf (graph_file, "bgcolor=\"transparent\"\n");
 
-    print_tree_preorder_for_file (root, graph_file);
+    print_tree_preorder_for_file (node, graph_file);
     fprintf (graph_file, "\n");
 
     fprintf (graph_file, "}");
@@ -563,39 +523,11 @@ int make_graph (struct Node_t* root)
     return 0;
 }
 
-FILE* tex_file_open (const char* filename)
-{
-    FILE* file = fopen (filename, "wb");
-    assert (file);
-
-    fprintf (file, "\\documentclass{article}\n");
-    fprintf (file, "\\begin{document}\n");
-    fprintf (file, "\\section{Differentiator}\n");
-    fprintf (file, "wazzzuuuup, shut up and take my money.\n");
-
-    return file;
-}
-
-void tex_file_close (FILE* file)
-{
-    fprintf (file, "\\end{document}\n");
-
-    fclose (file);
-}
-
-void tex_expression_print (struct Node_t* root, struct Node_t* diff_node, FILE* file)
-{
-    fprintf (file, "$$ ({");
-    print_tree_inorder (root, NULL, file);
-
-    fprintf (file, "})' = {");
-
-    print_tree_inorder (diff_node, NULL, file);
-    fprintf (file, "} $$\n");
-}
-
 void dump_in_log_file (struct Node_t* node, const char* reason)
 {
+    assert (node);
+    assert (reason);
+
     make_graph (node);
     write_log_file (reason);
 }
