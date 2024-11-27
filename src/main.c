@@ -29,7 +29,6 @@ int main (int argc, const char* argv[]) //TODO - open texfile...
     open_tex_file ("output.tex");
 
     struct Node_t* diff_node = diff (root);
-    // printf ("\n""answer = %lg\n", eval (root));
 
     dump_in_log_file (     root, "root --- end of programm");
     dump_in_log_file (diff_node, "diff_node --- end of programm");
