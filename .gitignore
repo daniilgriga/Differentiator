@@ -5,3 +5,4 @@ src/test
 *.aux
 src/output.log
 *.out
+*.json
