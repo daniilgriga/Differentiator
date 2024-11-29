@@ -4,11 +4,11 @@
 #include "tree.h"
 #include "dsl.h"
 #include "log.h"
+#include "get_g.h"
 
-const char* String   = "(c(1+x)+2)*(5+s(x))$";
-int         Position = 0;
+const char* String   = "";
+int         Position =  0;
 
-static struct Node_t* GetG (void);
 static struct Node_t* GetE (void);
 static struct Node_t* GetT (void);
 static struct Node_t* GetP (void);
@@ -20,24 +20,17 @@ static struct Node_t* GetPow  (void);
 
 static void SyntaxError (int line);
 
-int main (void)
+struct Node_t* GetG (const char* string)
 {
-    open_log_file ("graph_rec.html");
+    String = string;
 
-    struct Node_t* node = GetG ();
-    dump_in_log_file (node, "");
-
-    close_log_file ();
-
-    return 0;
-}
-
-static struct Node_t* GetG (void)
-{
     struct Node_t* val = GetE ();
 
+    fprintf (stderr, "str = %s, val = %p, CUR = %.10s", String, val, String);
+    fprintf (stderr, "node_value = %lg, node_type = %d\n\n", val->value, val->type);
+
     if ( String [Position] != '$')
-        SyntaxError (__LINE__);
+        SyntaxError (__LINE__); //TODO str in format printf;
 
     Position++;
 
@@ -48,10 +41,15 @@ static struct Node_t* GetE (void)
 {
     struct Node_t* val = GetT ();
 
+    fprintf (stderr, "str = %s, val = %p ", String, val);
+    fprintf (stderr, "node_value = %lg, node_type = %d\n\n", val->value, val->type);
+
     while ( String[Position] == '+' || String[Position] == '-' )
     {
         int op = String[Position];
+
         Position++;
+
         struct Node_t* val2 = GetT ();
 
         if (op == '+')
@@ -65,13 +63,13 @@ static struct Node_t* GetE (void)
 
 static struct Node_t* GetT (void)
 {
-    struct Node_t* val = GetP ();
+    struct Node_t* val = GetPow ();
 
     while ( String[Position] == '*' || String[Position] == '/' )
     {
         int op = String[Position];
         Position++;
-        struct Node_t* val2 = GetP ();
+        struct Node_t* val2 = GetPow ();
 
         if (op == '*')
             val = _MUL (val, val2);
@@ -80,6 +78,22 @@ static struct Node_t* GetT (void)
     }
 
     return val;
+}
+
+static struct Node_t* GetPow (void)
+{
+    struct Node_t* node = GetP ();
+
+    while ( String[Position] == POW)
+    {
+        Position++;
+
+        struct Node_t* exp = GetP ();
+
+        node = _POW (node, exp);
+    }
+
+    return node;
 }
 
 static struct Node_t* GetP (void)

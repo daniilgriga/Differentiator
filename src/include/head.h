@@ -17,6 +17,7 @@ struct Buffer_t
 {
     char* buffer_ptr;
     char* current_ptr;
+    int   file_size;
 };
 
 enum symbols

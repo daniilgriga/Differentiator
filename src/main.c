@@ -7,6 +7,8 @@
 #include "tree.h"
 #include "eval.h"
 #include "diff.h"
+#include "get_g.h"
+#include "file_data.h"
 #include "color_print.h"
 
 int main (int argc, const char* argv[]) //TODO - open texfile...
@@ -15,12 +17,14 @@ int main (int argc, const char* argv[]) //TODO - open texfile...
 
     const char* input = (argc >= 2)? argv[1] : "../build/example.txt";
 
-    FILE* example = fopen (input, "rb");
-    if (!example) { fprintf (stderr, "Error: File '%s' NOT opened", input); perror (""); return 1; }
-
-    struct Node_t* root = read_example (example, &buffer);
+    const char* string = file_reader (&buffer, input);
+    /*struct Node_t* root = read_example (example, &buffer);
     if (root == NULL)
-        return 1;
+        return 1;*/
+
+    fprintf (stderr, "START of reading.\n");
+    struct Node_t* root = GetG (string);
+    fprintf (stderr, "END of reading.\n");
 
     open_log_file ("../build/dump.html");
 

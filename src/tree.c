@@ -34,8 +34,6 @@ struct Node_t* read_example (FILE* file, struct Buffer_t* buffer)
 
     buffer->buffer_ptr = (char*) calloc ( (size_t) file_size + 1, sizeof(buffer->buffer_ptr[0]));
 
-    ON_DBG ( printf ("\n\n\n\nbuffer->buffer_ptr = [%p]\n\n\n\n", buffer->buffer_ptr); )
-
     size_t count = fread (buffer->buffer_ptr, sizeof(buffer->buffer_ptr[0]), (size_t) file_size, file);
     if ((long) count != file_size)
     {
@@ -365,22 +363,24 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
             brackets = 0;
 
     if (node->type == OP)
-        if (node->value == POW)
-            if (node->left->value == COS)
-                brackets = 1;
-
-    if (node->type == OP)
-        if (node->value == POW)
-            if (node->left->value == SIN)
-                brackets = 1;
-
-    if (node->type == OP)
         if (node->value == SUB)
             brackets = 0;
 
     if (node->type == NUM)
         if (node->value == -1)
             brackets = 1;
+
+    //fprintf (stderr, "type = %d, nd_vl = %lg, prnt_vl = %lg\n\n", node->type, node->value, parent->value);
+
+    if (node->type == OP)
+        if (node->value == COS)
+            if (parent->value == POW)
+                brackets = 1;
+
+    if (node->type == OP)
+        if (node->value == SIN)
+            if (parent->value == POW)
+                brackets = 1;
 
     if (brackets)
         tex_printf (" ( ");

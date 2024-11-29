@@ -9,12 +9,12 @@ struct Node_t* copy (struct Node_t* node);
 
 #define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left) )
 
-#define _L          node->left
-#define _R          node->right
-#define _dL   diff (node->left)
-#define _dR   diff (node->right)
-#define _cL   copy (node->left)
-#define _cR   copy (node->right)
+#define _L         node->left
+#define _R         node->right
+#define _dL  diff (node->left)
+#define _dR  diff (node->right)
+#define _cL  copy (node->left)
+#define _cR  copy (node->right)
 
 struct Node_t* diff (struct Node_t* node)
 {
@@ -85,7 +85,7 @@ struct Node_t* diff (struct Node_t* node)
 
             case SIN:
             {
-                struct Node_t* diff_node = _COMPOUND ( _COS ( _cL, _cR) );
+                struct Node_t* diff_node = _COMPOUND ( _COS ( _cL ) );
 
                 tex_printf_tree (node, diff_node, "every kindergartener in the USSR knew that: ");
 
@@ -94,7 +94,7 @@ struct Node_t* diff (struct Node_t* node)
 
             case COS:
             {
-                struct Node_t* diff_node = _COMPOUND ( _MUL ( _SIN ( _cL, _cR), _NUM(-1) ) );
+                struct Node_t* diff_node = _COMPOUND ( _MUL ( _SIN ( _cL ), _NUM(-1) ) );
 
                 tex_printf_tree (node, diff_node, "Ostap once said: ");
 
