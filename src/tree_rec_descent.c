@@ -9,6 +9,13 @@
 const char* String   = "";
 int         Position =  0;
 
+/*         GRAMMAR
+ *
+ *
+ *
+ *
+ */
+
 static struct Node_t* GetE (void);
 static struct Node_t* GetT (void);
 static struct Node_t* GetP (void);
@@ -26,9 +33,6 @@ struct Node_t* GetG (const char* string)
 
     struct Node_t* val = GetE ();
 
-    fprintf (stderr, "str = %s, val = %p, CUR = %.10s", String, val, String);
-    fprintf (stderr, "node_value = %lg, node_type = %d\n\n", val->value, val->type);
-
     if ( String [Position] != '$')
         SyntaxError (__LINE__); //TODO str in format printf;
 
@@ -40,9 +44,6 @@ struct Node_t* GetG (const char* string)
 static struct Node_t* GetE (void)
 {
     struct Node_t* val = GetT ();
-
-    fprintf (stderr, "str = %s, val = %p ", String, val);
-    fprintf (stderr, "node_value = %lg, node_type = %d\n\n", val->value, val->type);
 
     while ( String[Position] == '+' || String[Position] == '-' )
     {
@@ -84,7 +85,7 @@ static struct Node_t* GetPow (void)
 {
     struct Node_t* node = GetP ();
 
-    while ( String[Position] == POW)
+    while ( String[Position] == POW )
     {
         Position++;
 

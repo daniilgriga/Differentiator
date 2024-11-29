@@ -5,6 +5,7 @@
 
 #include "head.h"
 #include "file_data.h"
+#include "color_print.h"
 
 char* file_reader (struct Buffer_t* buffer, const char* filename)
 {
@@ -13,7 +14,7 @@ char* file_reader (struct Buffer_t* buffer, const char* filename)
     FILE* file = fopen (filename, "rb");
     if (file == NULL)
     {
-        fprintf (stderr, "Open error");
+        fprintf (stderr, RED_TEXT("Open error\n"));
         return NULL;
     }
 

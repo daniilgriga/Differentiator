@@ -50,10 +50,10 @@ struct Node_t* read_example (FILE* file, struct Buffer_t* buffer)
 
 #define INDENT      fprintf (stderr, "%*s", level*2, "")
 
-#define PRINT(...)  { int n =  fprintf (stderr, "%s:%d: ", __FILE__, __LINE__);                      \
-                          n += fprintf (stderr, "%*s", level*2, "");                                 \
-                          n += fprintf (stderr, __VA_ARGS__);                                        \
-                          n += fprintf (stderr, "%*s" "Cur = '%.25s'..., [%p].\n",                   \
+#define PRINT(...)  { int n =  fprintf (stderr, "%s:%d: ", __FILE__, __LINE__);                       \
+                          n += fprintf (stderr, "%*s", level*2, "");                                  \
+                          n += fprintf (stderr, __VA_ARGS__);                                         \
+                          n += fprintf (stderr, "%*s" "Cur = '%.25s'..., [%p].\n",                    \
                                                 100-n, "", buffer->current_ptr, buffer->current_ptr); }
 
 struct Node_t* read_node (int level, struct Buffer_t* buffer)
@@ -233,14 +233,22 @@ struct Node_t* new_node (int type, double value, struct Node_t* node_left, struc
 
 int delete_sub_tree (struct Node_t* node)
 {
-    node->value = 0;
-    node->type = 0;
+    fprintf (stderr, GREEN_TEXT("START DELETE\n\n"));
+    node->value = 666;
+    node->type  = 999;
+
+    fprintf (stderr, "IN DELETE: node = [%p]: ", node);
+    fprintf (stderr, "node->left = [%p] | node->right = [%p]\n\n", node->left, node->right);
 
     if (node->left)  delete_sub_tree (node->left);
-
     if (node->right) delete_sub_tree (node->right);
 
-    free (node);
+    //node->left  = NULL;
+    //node->right = NULL;
+
+    //free (node);
+
+    fprintf (stderr, GREEN_TEXT("END DELETE\n\n"));
 
     return 0;
 }
@@ -317,20 +325,34 @@ int its_func_is_root (struct Node_t* node)
     return 0;
 }
 
-void print_func_in_tex (struct Node_t* node)
+void print_func_in_tex (struct Node_t* node, struct Node_t* parent)
 {
     assert (node && "node is NULL in print_func");
 
-    if ( (int) node->value == 's')
-        tex_printf ("sin ");
+    if ( (int) node->value == SIN)
+    {
+        if (parent != NULL && parent->value == POW)
+            tex_printf ("(sin ");
+        else
+            tex_printf ("sin ");
+    }
 
-    if ( (int) node->value == 'c')
-        tex_printf ("cos ");
+    if ( (int) node->value == COS)
+    {
+        if (parent != NULL && parent->value == POW)
+            tex_printf ("(cos ");
+        else
+            tex_printf ("cos ");
+    }
 
    if (node->left)
     {
         tex_printf (" { ");
         tex_printf_tree_inorder (node->left, node);
+
+        if (parent != NULL && parent->value == POW)
+            tex_printf (")");
+
         tex_printf (" } ");
     }
 }
@@ -341,7 +363,7 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
 
     if (its_func_is_root (node))
     {
-        print_func_in_tex (node);
+        print_func_in_tex (node, parent);
         return 0;
     }
 
@@ -355,32 +377,48 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
         brackets = 0;
 
     if (node->type == OP)
-        if (node->value == DIV)
+        if ( (int) node->value == DIV)
             brackets = 0;
 
     if (node->type == OP)
-        if (node->value == POW)
+        if ( (int) node->value == POW)
             brackets = 0;
 
     if (node->type == OP)
-        if (node->value == SUB)
+        if ( (int) node->value == SUB)
             brackets = 0;
+
+    if ( parent != NULL && node->type == OP )
+    {
+        fprintf (stderr, "  in first if: ");
+        fprintf (stderr, "  type = %d, node [%p]: node_value = %c (%lg), parent [%p], parent_value = %c (%lg)\n\n",
+                            node->type, node, (int) node->value, node->value, parent, (int) parent->value, parent->value);
+
+        if ( (int) node->value == COS )
+        {
+            fprintf (stderr, "      in second if: ");
+            fprintf (stderr, "type = %d, node [%p]: node_value = %c (%lg), parent [%p], parent_value = %c (%lg)\n\n",
+                              node->type, node, (int) node->value, node->value, parent, (int) parent->value, parent->value);
+
+            if ( (int) parent->value == POW )
+            {
+                fprintf (stderr, "          in final if: ");
+                fprintf (stderr, " type = %d, node_value = %c (%lg), parent_value = %c (%lg)\n\n",
+                                   node->type, (int) node->value, node->value, (int) parent->value, parent->value);
+
+                brackets = 1;
+            }
+        }
+    }
+
+    if ( parent != NULL && node->type == OP)
+        if ( (int) node->value == SIN )
+            if ( (int) parent->value == POW )
+                brackets = 1;
 
     if (node->type == NUM)
-        if (node->value == -1)
+        if ( (int) node->value == -1)
             brackets = 1;
-
-    //fprintf (stderr, "type = %d, nd_vl = %lg, prnt_vl = %lg\n\n", node->type, node->value, parent->value);
-
-    if (node->type == OP)
-        if (node->value == COS)
-            if (parent->value == POW)
-                brackets = 1;
-
-    if (node->type == OP)
-        if (node->value == SIN)
-            if (parent->value == POW)
-                brackets = 1;
 
     if (brackets)
         tex_printf (" ( ");
@@ -398,8 +436,7 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
     {
         if (node->type == OP && node->value == MUL)
             tex_printf (" \\cdot ");
-        else
-        if (node->type == OP && node->value == DIV)
+        else if (node->type == OP && node->value == DIV)
             tex_printf (" \\over ");
         else
             tex_printf (" %c ", (int) node->value);
@@ -476,21 +513,25 @@ void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
     assert (node);
     assert (filename);
 
+    fprintf (stderr, YELLOW_TEXT("IN DUMP")"\nnode [%p]: node->type = %d\n", node, node->type);
+    //assert (node->type == NUM || node->type == OP || node->type == VAR);
+
+
     if (node->type == NUM)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | value = %g | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | value = %g   | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
              node, node, node->type, node->value, node->left, node->right);
     else if (node->type == OP)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP)  | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
              node, node, node->type, (int) node->value, node->left, node->right);
     else if (node->type == VAR)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
              node, node, node->type, (int) node->value, node->left, node->right);
 
     if (node->left)
-        fprintf (filename, "node%p -> node%p\n;", node, node->left);
+        fprintf (filename, "node%p -> node%p;\n", node, node->left);
 
     if (node->right)
-        fprintf (filename, "node%p -> node%p\n;", node, node->right);
+        fprintf (filename, "node%p -> node%p;\n", node, node->right);
 
     if (node->left)  print_tree_preorder_for_file (node->left , filename);
 

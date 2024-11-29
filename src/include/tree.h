@@ -51,7 +51,7 @@ int priority (int op);
 
 int its_func_is_root (struct Node_t* node);
 
-void print_func_in_tex (struct Node_t* node);
+void print_func_in_tex (struct Node_t* node, struct Node_t* parent);
 
 int delete_sub_tree       (struct Node_t* node);
 
