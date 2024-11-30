@@ -133,47 +133,25 @@ struct Node_t* copy (struct Node_t* node)
 #define _IS(where, what) (root->where->type  ==  NUM  && \
                           root->where->value == (what))
 
+#define $ verificator(root, __FILE__, __LINE__);
+
 int simplification (struct Node_t* root, struct Node_t* parent)
 {
-    fprintf (stderr, BLUE_TEXT("\nSTART SIMPLIFY\n\n"));
-
     assert (root);
 
-    verificator (root, __FILE__, __LINE__);
-
-    fprintf (stderr, ">>> line: %d: root = [%p], root->type = %d, root->value = %c (%lg)\n", __LINE__, root, root->type, (int) root->value, root->value);
-
-    int count_changes = 0;
+$   int count_changes = 0;
 
     if (root->left)
         simplification (root->left, root);
-
-    verificator (root, __FILE__, __LINE__);
-
-    fprintf (stderr, "line: %d: root = [%p], root->type = %d\n", __LINE__, root, root->type);
-
+$
     if (root->right)
         simplification (root->right, root);
-
-    verificator (root, __FILE__, __LINE__);
-
+$
     if ( (root->type == OP) && ((int) root->value == MUL ))
     {
-        fprintf (stderr, "starting first if: root [%p]:  \n\n", root);
-
-        fprintf (stderr, "line: %d: root = [%p], root->type = %d\n", __LINE__, root, root->type);
-
-        verificator (root, __FILE__, __LINE__);
-
-        if ( _IS (left, 0) || _IS (right, 0) )
+$       if ( _IS (left, 0) || _IS (right, 0) )
         {
-            fprintf (stderr, "starting second if: root [%p]:  \n\n", root);
-
-            fprintf (stderr, "line: %d: root = [%p], root->type = %d\n", __LINE__, root, root->type);
-
-            verificator (root, __FILE__, __LINE__);
-
-            delete_sub_tree (root->left);
+$           delete_sub_tree (root->left);
             delete_sub_tree (root->right);
 
             root->left  = NULL;
@@ -182,25 +160,18 @@ int simplification (struct Node_t* root, struct Node_t* parent)
             root->type  = NUM;
             root->value = 0;
 
-            count_changes++;
+$           count_changes++;
         }
     }
-
-
-    fprintf (stderr, BLUE_TEXT("\nEND SIMPLIFY\n\n"));
 }
 
+#undef $
 #undef _IS
 
 void verificator (struct Node_t* node, const char* filename, int line)
 {
-    if (!node->type) fprintf (stderr, "\n    IN VERIFY: %s:%d:\n", filename, line);
-
-    if (!node->type) fprintf (stderr, "    node = [%p]: node->type = %d, node->value = %c (%lg)\n\n", node, node->type, (int) node->value, node->value);
     assert (node->type);
 
     if (node->left)  verificator (node->left, filename, line);
     if (node->right) verificator (node->right, filename, line);
-
-    if (!node->type) fprintf (stderr, "    END VERIFY:\n\n");
 }

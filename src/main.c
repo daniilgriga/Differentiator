@@ -32,19 +32,11 @@ int main (int argc, const char* argv[])
 
     open_tex_file ("output.tex");
 
-    struct Node_t* diff_node = root; //diff (root);
+    struct Node_t* diff_node = diff (root);
 
-    //dump_in_log_file (diff_node, "diff_node --- WITHOUT simplification");
-
-    verificator (diff_node, __FILE__, __LINE__);
-
-    fprintf (stderr, "-------------------------------------BEFORE_SIMPLIFY-------------------------------------\n");
+    dump_in_log_file (diff_node, "diff_node --- WITHOUT simplification");
 
     int changes = simplification (diff_node, NULL);
-
-    fprintf (stderr, "-------------------------------------AFTER_SIMPLIFY-------------------------------------\n");
-
-    verificator (diff_node, __FILE__, __LINE__);
 
     dump_in_log_file (diff_node, "diff_node --- WITH simplification");
 
@@ -54,7 +46,6 @@ int main (int argc, const char* argv[])
 
     close_log_file ();
 
-    fprintf (stderr, "start destructor\n");
     destructor (root, &buffer);
 
     return 0;

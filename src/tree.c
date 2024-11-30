@@ -233,22 +233,16 @@ struct Node_t* new_node (int type, double value, struct Node_t* node_left, struc
 
 int delete_sub_tree (struct Node_t* node)
 {
-    fprintf (stderr, GREEN_TEXT("START DELETE\n\n"));
-    node->value = 666;
-    node->type  = 999;
-
-    fprintf (stderr, "IN DELETE: node = [%p]: ", node);
-    fprintf (stderr, "node->left = [%p] | node->right = [%p]\n\n", node->left, node->right);
+    node->value = 0;
+    node->type  = 0;
 
     if (node->left)  delete_sub_tree (node->left);
     if (node->right) delete_sub_tree (node->right);
 
-    //node->left  = NULL;
-    //node->right = NULL;
+    node->left  = NULL;
+    node->right = NULL;
 
-    //free (node);
-
-    fprintf (stderr, GREEN_TEXT("END DELETE\n\n"));
+    free (node);
 
     return 0;
 }
@@ -389,27 +383,9 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
             brackets = 0;
 
     if ( parent != NULL && node->type == OP )
-    {
-        fprintf (stderr, "  in first if: ");
-        fprintf (stderr, "  type = %d, node [%p]: node_value = %c (%lg), parent [%p], parent_value = %c (%lg)\n\n",
-                            node->type, node, (int) node->value, node->value, parent, (int) parent->value, parent->value);
-
         if ( (int) node->value == COS )
-        {
-            fprintf (stderr, "      in second if: ");
-            fprintf (stderr, "type = %d, node [%p]: node_value = %c (%lg), parent [%p], parent_value = %c (%lg)\n\n",
-                              node->type, node, (int) node->value, node->value, parent, (int) parent->value, parent->value);
-
             if ( (int) parent->value == POW )
-            {
-                fprintf (stderr, "          in final if: ");
-                fprintf (stderr, " type = %d, node_value = %c (%lg), parent_value = %c (%lg)\n\n",
-                                   node->type, (int) node->value, node->value, (int) parent->value, parent->value);
-
                 brackets = 1;
-            }
-        }
-    }
 
     if ( parent != NULL && node->type == OP)
         if ( (int) node->value == SIN )
@@ -513,8 +489,7 @@ void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
     assert (node);
     assert (filename);
 
-    fprintf (stderr, YELLOW_TEXT("IN DUMP")"\nnode [%p]: node->type = %d\n", node, node->type);
-    //assert (node->type == NUM || node->type == OP || node->type == VAR);
+    assert (node->type == NUM || node->type == OP || node->type == VAR);
 
 
     if (node->type == NUM)
