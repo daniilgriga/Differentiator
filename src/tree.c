@@ -233,16 +233,28 @@ struct Node_t* new_node (int type, double value, struct Node_t* node_left, struc
 
 int delete_sub_tree (struct Node_t* node)
 {
-    node->value = 0;
-    node->type  = 0;
-
     if (node->left)  delete_sub_tree (node->left);
     if (node->right) delete_sub_tree (node->right);
+
+    delete_node (node);
+
+    return 0;
+}
+
+int delete_node (struct Node_t* node)
+{
+    if (node == NULL)
+        fprintf (stderr, "node = NULL\n");
+
+    fprintf (stderr, "node [%p], node->left = [%p], node->right = [%p]\n", node, node->left, node->right);
+
+    node->type  = 666;
+    node->value = 0;
 
     node->left  = NULL;
     node->right = NULL;
 
-    free (node);
+    //free (node);
 
     return 0;
 }
@@ -431,33 +443,44 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
     return 0;
 }
 
-void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node)
+void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, int first_equation)
 {
-    assert (node);
-    assert (diff_node);
+    //assert (node);
+    //assert (diff_node);
 
-    tex_printf ("$$ ({");
-    tex_printf_tree_inorder (node, NULL);
-
-    tex_printf ("})' = {");
-
-    tex_printf_tree_inorder (diff_node, NULL);
-    tex_printf ("} $$\n");
-}
-
-void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message)
-{
-    assert (node);
-    assert (diff_node);
-    assert (message);
-
-    if (GlobalNode != diff_node)
+    if (first_equation == 'y')
     {
-        tex_printf ("%s", message);
-        tex_printf_expression (node, diff_node);
+        tex_printf ("$$ f(x) = {");
+        tex_printf_tree_inorder (node, NULL);
+        tex_printf ("} $$");
     }
     else
-        tex_printf ("%s... wait wait its the same, see above bro\\newline \\newline ", message);
+    {
+        tex_printf ("$$ ({");
+        tex_printf_tree_inorder (node, NULL);
+
+        tex_printf ("})' = {");
+
+        tex_printf_tree_inorder (diff_node, NULL);
+        tex_printf ("} $$\n");
+    }
+}
+
+void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message, int first_equation)
+{
+    //assert (node);
+    //assert (diff_node);
+    //assert (message);
+
+    //if (GlobalNode != diff_node)
+    //{
+
+    tex_printf ("%s", message);
+    tex_printf_expression (node, diff_node, first_equation);
+
+    //}
+    //else
+    //    tex_printf ("%s... wait wait its the same, see above bro\\newline \\newline ", message);
 
     GlobalNode = diff_node;
 }
@@ -486,10 +509,10 @@ int priority (int op)
 
 void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
 {
-    assert (node);
-    assert (filename);
+    //assert (node);
+    //assert (filename);
 
-    assert (node->type == NUM || node->type == OP || node->type == VAR);
+    //assert (node->type == NUM || node->type == OP || node->type == VAR);
 
 
     if (node->type == NUM)
@@ -501,6 +524,9 @@ void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
     else if (node->type == VAR)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
              node, node, node->type, (int) node->value, node->left, node->right);
+    else if (node->type == ROOT)
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%lg' | { son_node = [%p] } }\"; style = filled; fillcolor = \"#F0FFFF\"];\n",
+             node, node, node->type, node->value, node->left);
 
     if (node->left)
         fprintf (filename, "node%p -> node%p;\n", node, node->left);
@@ -539,13 +565,19 @@ int make_graph (struct Node_t* node)
     return 0;
 }
 
-void dump_in_log_file (struct Node_t* node, const char* reason)
+void dump_in_log_file (struct Node_t* node, const char* reason, ...)
 {
-    assert (node);
-    assert (reason);
+    if (node == NULL)
+        fprintf (stderr, "got node == NULL in dump, reason = \"%s\"\n", reason);
 
     make_graph (node);
-    write_log_file (reason);
+
+    va_list args;
+    va_start (args, reason);
+
+    write_log_file (reason, args);
+
+    va_end (args);
 }
 
 void clean_buffer(void)

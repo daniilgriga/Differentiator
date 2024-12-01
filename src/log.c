@@ -3,17 +3,22 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "head.h"
+#include "tree.h"
 #include "log.h"
 
 static FILE* LOG_FILE = NULL;
+
+void log_vprintf (const char* message, va_list args)
+{
+    vfprintf (LOG_FILE, message, args);
+}
 
 int log_printf (const char* message, ...)
 {
     va_list args;
     va_start (args, message);
 
-    vfprintf (LOG_FILE, message, args);
+    log_vprintf (message, args);
 
     va_end (args);
 
@@ -34,11 +39,13 @@ FILE* open_log_file (const char* filename)
     return LOG_FILE;
 }
 
-int write_log_file (const char* reason)
+int write_log_file (const char* reason, va_list args)
 {
     log_printf ("<body style=\"background-color: #AFEEEE\">");
 
-    log_printf ("<hr> <h2> %s </h2> <br> <hr>\n\n", reason);
+    log_printf ("<hr> <h2>");
+    log_vprintf (reason, args);
+    log_printf ("</h2> <br> <hr>\n\n");
 
     static int dump_number = 1;
     static char filename[50] = {};

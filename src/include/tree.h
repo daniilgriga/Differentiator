@@ -14,13 +14,16 @@ struct Buffer_t
 {
     char* buffer_ptr;
     char* current_ptr;
+
+    long file_size;
 };
 
 enum symbols
 {
-    NUM = 1,
-    OP  = 2,
-    VAR = 3
+    NUM  = 1,
+    OP   = 2,
+    VAR  = 3,
+    ROOT = -1
 };
 
 enum operations
@@ -43,9 +46,9 @@ int print_tree_postorder   (struct Node_t* node);
 
 int  tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent);
 
-void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node);
+void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, int first_equation);
 
-void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message);
+void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message, int first_equation);
 
 int priority (int op);
 
@@ -54,6 +57,8 @@ int its_func_is_root (struct Node_t* node);
 void print_func_in_tex (struct Node_t* node, struct Node_t* parent);
 
 int delete_sub_tree       (struct Node_t* node);
+
+int delete_node (struct Node_t* node);
 
 int buffer_dtor (struct Buffer_t* buffer);
 
@@ -65,7 +70,7 @@ int make_graph  (struct Node_t* node);
 
 void clean_buffer (void);
 
-void dump_in_log_file (struct Node_t* node, const char* reason);
+void dump_in_log_file (struct Node_t* node, const char* reason, ...);
 
 struct Node_t* read_example (FILE* file, struct Buffer_t* buffer);
 

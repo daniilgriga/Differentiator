@@ -2,10 +2,12 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "tree.h"
 #include "tex.h"
 #include "dsl.h"
+#include "log.h"
 #include "diff.h"
 #include "color_print.h"
 
@@ -30,6 +32,7 @@ struct Node_t* diff (struct Node_t* node)
 {
     if (node->type == NUM) return _NUM(0);
     if (node->type == VAR) return _NUM(1);
+    if (node->type == ROOT) {;}
     if (node->type == OP)
         switch ((int) node->value)
         {
@@ -37,7 +40,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _ADD (_dL, _dR);
 
-                tex_printf_tree (node, diff_node, "the derivative of the sum can be represented as follows: ");
+                tex_printf_tree (node, diff_node, "the derivative of the sum can be represented as follows: ", 'n');
 
                 return diff_node;
             }
@@ -46,7 +49,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _ADD ( _MUL (_dL, _cR), _MUL (_cL, _dR) );
 
-                tex_printf_tree (node, diff_node, "obviously, the derivative of multiplication looks like this: ");
+                tex_printf_tree (node, diff_node, "obviously, the derivative of multiplication looks like this: ", 'n');
 
                 return diff_node;
             }
@@ -58,14 +61,14 @@ struct Node_t* diff (struct Node_t* node)
                 struct Node_t* u   = node->left;
                 struct Node_t* du  = diff (u);
 
-                tex_printf_tree (u, du, "the derivative of the numerator is calculated as follows: ");
+                tex_printf_tree (u, du, "the derivative of the numerator is calculated as follows: ", 'n');
 
                 struct Node_t* cu  = copy (u);
 
                 struct Node_t* v   = node->right;
                 struct Node_t* dv  = diff (v);
 
-                tex_printf_tree (v, dv, "Karzhemanov said that the denominator is equal to: ");
+                tex_printf_tree (v, dv, "Karzhemanov said that the denominator is equal to: ", 'n');
 
                 struct Node_t* cv  = copy (v);
 
@@ -79,7 +82,7 @@ struct Node_t* diff (struct Node_t* node)
 
                 struct Node_t* diff_node = _DIV (duv_udv, v2);
 
-                tex_printf_tree (node, diff_node, "final differentiated fraction: ");
+                tex_printf_tree (node, diff_node, "final differentiated fraction: ", 'n');
 
                 return diff_node;
             }
@@ -88,7 +91,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB (_cR, _NUM(1) ) ) ) );
 
-                tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ");
+                tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ", 'n');
 
                 return diff_node;
             }
@@ -97,7 +100,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _COMPOUND ( _COS ( _cL ) );
 
-                tex_printf_tree (node, diff_node, "every kindergartener in the USSR knew that: ");
+                tex_printf_tree (node, diff_node, "every kindergartener in the USSR knew that: ", 'n');
 
                 return diff_node;
             }
@@ -106,7 +109,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _COMPOUND ( _MUL ( _SIN ( _cL ), _NUM(-1) ) );
 
-                tex_printf_tree (node, diff_node, "Ostap once said: ");
+                tex_printf_tree (node, diff_node, "Ostap once said: ", 'n');
 
                 return diff_node;
             }
@@ -139,20 +142,23 @@ int simplification (struct Node_t* root, struct Node_t* parent)
 {
     assert (root);
 
-$   int count_changes = 0;
+    int count_changes = 0;
 
     if (root->left)
         simplification (root->left, root);
-$
+
     if (root->right)
         simplification (root->right, root);
-$
+
     if ( (root->type == OP) && ((int) root->value == MUL ))
-    {
-$       if ( _IS (left, 0) || _IS (right, 0) )
+        if ( _IS (left, 0) || _IS (right, 0) )
         {
-$           delete_sub_tree (root->left);
+            dump_in_log_file (parent, "<h1> BEFORE DELETE MUL: </h1>", root->left, root->right);
+
+            delete_sub_tree (root->left);
             delete_sub_tree (root->right);
+
+            dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node->right [%p]:</h1>", root->left, root->right);
 
             root->left  = NULL;
             root->right = NULL;
@@ -160,7 +166,39 @@ $           delete_sub_tree (root->left);
             root->type  = NUM;
             root->value = 0;
 
-$           count_changes++;
+            count_changes++;
+        }
+
+    if ( (root->type == OP) && ((int) root->value == ADD))
+    {
+        if ( _IS (left, 0) )
+        {
+$           if (parent->left == root)
+                parent->left  = root->right;
+            else
+                parent->right = root->right;
+$
+            dump_in_log_file (parent, "<h1>BEFORE DELETE ADD left:</h1>", root->left, root);
+
+            delete_node (root->left);
+            delete_node (root);
+
+            dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node [%p] :</h1>", root->left, root);
+        }
+
+        if ( _IS (right, 0) )
+        {
+            dump_in_log_file (parent, "<h1>BEFORE DELETE ADD right");
+
+            if (parent->left == root)
+                parent->left  = root->left;
+            else
+                parent->right = root->left; //func
+
+            delete_node (root->right);
+            delete_node (root);
+
+            //dump_in_log_file (parent, "<h1>delete node->left [%p], delete node [%p] :</h1>");
         }
     }
 }
@@ -170,7 +208,8 @@ $           count_changes++;
 
 void verificator (struct Node_t* node, const char* filename, int line)
 {
-    assert (node->type);
+    if (node->type == 0)
+        printf ("%s:%d: vasalam u have a problem: node [%p]: type = %d, value = %c (%lg)\n\n", filename, line, node, node->type, (int) node->value, node->value);
 
     if (node->left)  verificator (node->left, filename, line);
     if (node->right) verificator (node->right, filename, line);

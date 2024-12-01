@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "head.h"
+#include "tree.h"
 #include "file_data.h"
 #include "color_print.h"
 

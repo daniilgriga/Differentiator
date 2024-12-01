@@ -22,9 +22,13 @@ int main (int argc, const char* argv[])
     if (root == NULL)
         return 1;*/
 
+    struct Node_t* root = new_node (ROOT, -1, NULL, NULL);
+
     fprintf (stderr, "START of reading.\n");
-    struct Node_t* root = GetG (string);
+    struct Node_t* node = GetG (string);
     fprintf (stderr, "END of reading.\n");
+
+    root->left = node;
 
     open_log_file ("../build/dump.html");
 
@@ -32,13 +36,19 @@ int main (int argc, const char* argv[])
 
     open_tex_file ("output.tex");
 
-    struct Node_t* diff_node = diff (root);
+    tex_printf_tree (node, NULL, "wazzzuuuup, shut up and take my derivative of this function: \\newline ", 'y');
 
-    dump_in_log_file (diff_node, "diff_node --- WITHOUT simplification");
+    struct Node_t* diff_node = diff (node);
 
-    int changes = simplification (diff_node, NULL);
+    root->left = diff_node;
 
-    dump_in_log_file (diff_node, "diff_node --- WITH simplification");
+    dump_in_log_file (root, "diff_node --- WITHOUT simplification");
+
+    int changes = simplification (root, NULL);
+
+    tex_printf_tree (node, diff_node, "with all simplification", 'n');
+
+    dump_in_log_file (root, "diff_node --- WITH simplification");
 
     close_tex_file (); // create_pdf_latex - fflush and system , atexit
 

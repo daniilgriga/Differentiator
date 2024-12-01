@@ -15,10 +15,9 @@ FILE* open_tex_file (const char* filename)
         return NULL;
     }
 
-    tex_printf ("\\documentclass{article}\n");
-    tex_printf ("\\begin{document}\n");
-    tex_printf ("\\section{Differentiator}\n");
-    tex_printf ("wazzzuuuup, shut up and take my money.\\newline ");
+    tex_printf ("\\documentclass{article}");
+    tex_printf ("\\begin{document}");
+    tex_printf ("\\section{Differentiator}");
 
     return GlobalTex;
 }
