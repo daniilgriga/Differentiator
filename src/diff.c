@@ -133,7 +133,8 @@ struct Node_t* copy (struct Node_t* node)
     return copy_node;
 }
 
-#define _IS(where, what) (root->where->type  ==  NUM  && \
+#define _IS(where, what) (root && root->where &&         \
+                          root->where->type  ==  NUM  && \
                           root->where->value == (what))
 
 #define $ verificator(root, __FILE__, __LINE__);
@@ -158,13 +159,13 @@ int simplification (struct Node_t* root, struct Node_t* parent)
             delete_sub_tree (root->left);
             delete_sub_tree (root->right);
 
-            dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node->right [%p]:</h1>", root->left, root->right);
-
             root->left  = NULL;
             root->right = NULL;
 
             root->type  = NUM;
             root->value = 0;
+
+            dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node->right [%p]:</h1>", root->left, root->right);
 
             count_changes++;
         }
@@ -198,8 +199,10 @@ $
             delete_node (root->right);
             delete_node (root);
 
-            //dump_in_log_file (parent, "<h1>delete node->left [%p], delete node [%p] :</h1>");
+            dump_in_log_file (parent, "<h1>delete node->left [%p], delete node [%p]:</h1>", root->left, root->right);
         }
+
+        //mull 1 && const
     }
 }
 
