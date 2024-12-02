@@ -15,14 +15,18 @@ double eval (struct Node_t* node)
 
     if (node->type == NUM)
     {
+        double value = node->value;
         printf ("node->type = NUM >>> node->value = %lg\n\n", node->value);
-        return node->value;
+
+        delete_node (node);
+
+        return value;
     }
 
     if (node->type == VAR)
     {
         printf ("node->type = VAR >>> node->value = %c\n\n", (int) node->value);
-        return GlobalX;
+        return NAN;
     }
 
     if (node->type == OP)
@@ -35,7 +39,11 @@ double eval (struct Node_t* node)
             {
                 double res = eval (node->left) +
                              eval (node->right);
+
                 printf ("case ADD: result = %lg\n\n", res);
+
+                delete_node (node);
+
                 return res;
             }
 
@@ -44,6 +52,9 @@ double eval (struct Node_t* node)
                 double res = eval (node->left) -
                              eval (node->right);
                 printf ("case SUB: result = %lg\n\n", res);
+
+                delete_node (node);
+
                 return res;
             }
 
@@ -52,6 +63,9 @@ double eval (struct Node_t* node)
                 double res = eval (node->left) /
                              eval (node->right);
                 printf ("case DIV: result = %lg\n\n", res);
+
+                delete_node (node);
+
                 return res;
             }
 
@@ -60,6 +74,9 @@ double eval (struct Node_t* node)
                 double res = eval (node->left) *
                              eval (node->right);
                 printf ("case MUL: result = %lg\n\n", res);
+
+                delete_node (node);
+
                 return res;
             }
 
@@ -67,6 +84,9 @@ double eval (struct Node_t* node)
             {
                 double res = sin ( eval (node->left) );
                 printf ("case SIN: result = %lg\n\n", res);
+
+                delete_node (node);
+
                 return res;
             }
 
@@ -74,6 +94,9 @@ double eval (struct Node_t* node)
             {
                 double res = cos ( eval (node->left) );
                 printf ("case COS: result = %lg\n\n", res);
+
+                delete_node (node);
+
                 return res;
             }
 

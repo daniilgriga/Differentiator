@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "tree.h"
 #include "tex.h"
 #include "dsl.h"
 #include "log.h"
 #include "diff.h"
+#include "eval.h"
 #include "color_print.h"
 
 #ifdef TEST
@@ -139,17 +141,17 @@ struct Node_t* copy (struct Node_t* node)
 
 #define $ verificator(root, __FILE__, __LINE__);
 
-int simplification (struct Node_t* root, struct Node_t* parent)
+int simplification_typical_operations (struct Node_t* root, struct Node_t* parent)
 {
     assert (root);
 
     int count_changes = 0;
 
     if (root->left)
-        simplification (root->left, root);
+        simplification_typical_operations (root->left, root);
 
     if (root->right)
-        simplification (root->right, root);
+        simplification_typical_operations (root->right, root);
 
     if ( (root->type == OP) && ((int) root->value == MUL ))
         if ( _IS (left, 0) || _IS (right, 0) )
@@ -159,16 +161,53 @@ int simplification (struct Node_t* root, struct Node_t* parent)
             delete_sub_tree (root->left);
             delete_sub_tree (root->right);
 
-            root->left  = NULL;
-            root->right = NULL;
-
             root->type  = NUM;
             root->value = 0;
+
+            root->left  = NULL;
+            root->right = NULL;
 
             dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node->right [%p]:</h1>", root->left, root->right);
 
             count_changes++;
         }
+
+    if ( (root->type == OP) && ((int) root->value == MUL ))
+    {
+        if ( _IS (left, 1) )
+        {
+            dump_in_log_file (parent, "<h1> BEFORE DELETE MUL: </h1>", root->left, root->right);
+
+            if (parent->left == root)
+                parent->left  = root->right;
+            else
+                parent->right = root->right;
+
+            delete_node (root->left);
+            delete_node (root);
+
+            dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node->right [%p]:</h1>", root->left, root->right);
+
+            count_changes++;
+        }
+
+        if ( _IS (right, 1) )
+        {
+            dump_in_log_file (parent, "<h1> BEFORE DELETE MUL: </h1>", root->left, root->right);
+
+            if (parent->left == root)
+                parent->left  = root->left;
+            else
+                parent->right = root->left;
+
+            delete_node (root->right);
+            delete_node (root);
+
+            dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node->right [%p]:</h1>", root->left, root->right);
+
+            count_changes++;
+        }
+    }
 
     if ( (root->type == OP) && ((int) root->value == ADD))
     {
@@ -201,8 +240,6 @@ $
 
             dump_in_log_file (parent, "<h1>delete node->left [%p], delete node [%p]:</h1>", root->left, root->right);
         }
-
-        //mull 1 && const
     }
 }
 
@@ -216,4 +253,26 @@ void verificator (struct Node_t* node, const char* filename, int line)
 
     if (node->left)  verificator (node->left, filename, line);
     if (node->right) verificator (node->right, filename, line);
+}
+
+double constant_folding (struct Node_t* root)
+{
+    assert (root);
+
+    if (root->left)
+        constant_folding (root->left);
+
+    if (root->right)
+        constant_folding (root->right);
+
+    if (root->type == OP && root->left->type == NUM && root->right->type == NUM)
+    {
+        double answer = eval (root);
+        fprintf (stderr, "\nlol im in if: node [%p]: answer = %lg\n\n", root, answer);
+
+        root->type  = NUM;
+        root->value = answer;
+    }
+
+    return 0;
 }

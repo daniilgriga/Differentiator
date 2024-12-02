@@ -18,6 +18,7 @@ int main (int argc, const char* argv[])
     const char* input = (argc >= 2)? argv[1] : "../build/example.txt";
 
     const char* string = file_reader (&buffer, input);
+
     /*struct Node_t* root = read_example (example, &buffer);
     if (root == NULL)
         return 1;*/
@@ -44,11 +45,18 @@ int main (int argc, const char* argv[])
 
     dump_in_log_file (root, "diff_node --- WITHOUT simplification");
 
-    int changes = simplification (root, NULL);
+    int changes = simplification_typical_operations (root, NULL);
+    diff_node = root->left;
+
+    tex_printf_tree (node, diff_node, "with typical operations simplification", 'n');
+
+    dump_in_log_file (root, "diff_node --- WITH one simplification");
+
+    double temp = constant_folding (root);
 
     tex_printf_tree (node, diff_node, "with all simplification", 'n');
 
-    dump_in_log_file (root, "diff_node --- WITH simplification");
+    dump_in_log_file (root, "diff_node --- WITH all simplification");
 
     close_tex_file (); // create_pdf_latex - fflush and system , atexit
 

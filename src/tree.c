@@ -244,9 +244,7 @@ int delete_sub_tree (struct Node_t* node)
 int delete_node (struct Node_t* node)
 {
     if (node == NULL)
-        fprintf (stderr, "node = NULL\n");
-
-    fprintf (stderr, "node [%p], node->left = [%p], node->right = [%p]\n", node, node->left, node->right);
+        fprintf (stderr, "IN DELETE: node = NULL\n");
 
     node->type  = 666;
     node->value = 0;
@@ -461,6 +459,7 @@ void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, int f
 
         tex_printf ("})' = {");
 
+        fprintf (stderr, "diff_n = %p\n\n", diff_node);
         tex_printf_tree_inorder (diff_node, NULL);
         tex_printf ("} $$\n");
     }
