@@ -7,6 +7,8 @@ int simplification_typical_operations (struct Node_t* root, struct Node_t* paren
 
 double constant_folding (struct Node_t* root);
 
+int simplification_of_expression (struct Node_t* root, struct Node_t* parent);
+
 void verificator (struct Node_t* node, const char* filename, int line);
 
 #endif // DIFF_H_

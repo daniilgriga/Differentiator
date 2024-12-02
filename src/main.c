@@ -45,14 +45,9 @@ int main (int argc, const char* argv[])
 
     dump_in_log_file (root, "diff_node --- WITHOUT simplification");
 
-    int changes = simplification_typical_operations (root, NULL);
+    simplification_of_expression (root, NULL);
+
     diff_node = root->left;
-
-    tex_printf_tree (node, diff_node, "with typical operations simplification", 'n');
-
-    dump_in_log_file (root, "diff_node --- WITH one simplification");
-
-    double temp = constant_folding (root);
 
     tex_printf_tree (node, diff_node, "with all simplification", 'n');
 

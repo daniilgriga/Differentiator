@@ -21,14 +21,7 @@
 
 struct Node_t* copy (struct Node_t* node);
 
-#define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left) )
-
-#define _L         node->left
-#define _R         node->right
-#define _dL  diff (node->left)
-#define _dR  diff (node->right)
-#define _cL  copy (node->left)
-#define _cR  copy (node->right)
+#define MAX_OPTIMIZATIONS 100
 
 struct Node_t* diff (struct Node_t* node)
 {
@@ -74,9 +67,11 @@ struct Node_t* diff (struct Node_t* node)
 
                 struct Node_t* cv  = copy (v);
 
-                struct Node_t* v2  = _MUL (cv, cv);
+                struct Node_t* c2v  = copy (cv);
 
-                struct Node_t* duv = _MUL (du, cv);
+                struct Node_t* v2  = _POW (cv, _NUM (2));
+
+                struct Node_t* duv = _MUL (du, c2v);
 
                 struct Node_t* udv = _MUL (cu, dv);
 
@@ -91,7 +86,7 @@ struct Node_t* diff (struct Node_t* node)
 
             case POW:
             {
-                struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB (_cR, _NUM(1) ) ) ) );
+                struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB ( _cR, _NUM(1) ) ) ) );
 
                 tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ", 'n');
 
@@ -109,7 +104,7 @@ struct Node_t* diff (struct Node_t* node)
 
             case COS:
             {
-                struct Node_t* diff_node = _COMPOUND ( _MUL ( _SIN ( _cL ), _NUM(-1) ) );
+                struct Node_t* diff_node = _COMPOUND ( _MUL ( _NUM (-1), _SIN ( _cL ) ) );
 
                 tex_printf_tree (node, diff_node, "Ostap once said: ", 'n');
 
@@ -148,10 +143,10 @@ int simplification_typical_operations (struct Node_t* root, struct Node_t* paren
     int count_changes = 0;
 
     if (root->left)
-        simplification_typical_operations (root->left, root);
+        count_changes += simplification_typical_operations (root->left, root);
 
     if (root->right)
-        simplification_typical_operations (root->right, root);
+        count_changes += simplification_typical_operations (root->right, root);
 
     if ( (root->type == OP) && ((int) root->value == MUL ))
         if ( _IS (left, 0) || _IS (right, 0) )
@@ -224,6 +219,8 @@ $
             delete_node (root);
 
             dump_in_log_file (parent, "<h1>AFTER DELETE: delete node->left [%p], delete node [%p] :</h1>", root->left, root);
+
+            count_changes++;
         }
 
         if ( _IS (right, 0) )
@@ -239,8 +236,32 @@ $
             delete_node (root);
 
             dump_in_log_file (parent, "<h1>delete node->left [%p], delete node [%p]:</h1>", root->left, root->right);
+
+            count_changes++;
         }
     }
+
+    if ( (root->type == OP) && ((int) root->value == POW ))
+    {
+        if ( _IS (right, 1) )
+        {
+            dump_in_log_file (parent, "<h1>BEFORE DELETE POW</h1>");
+
+            if (parent->left == root)
+                parent->left  = root->left;
+            else
+                parent->right = root->left;
+
+            delete_node (root->right);
+            delete_node (root);
+
+            dump_in_log_file (parent, "<h1>AFTER DELETE POW</h1>");
+
+            count_changes++;
+        }
+    }
+
+    return count_changes;
 }
 
 #undef $
@@ -259,11 +280,13 @@ double constant_folding (struct Node_t* root)
 {
     assert (root);
 
+    int count_changes = 0;
+
     if (root->left)
-        constant_folding (root->left);
+        count_changes += constant_folding (root->left);
 
     if (root->right)
-        constant_folding (root->right);
+        count_changes += constant_folding (root->right);
 
     if (root->type == OP && root->left->type == NUM && root->right->type == NUM)
     {
@@ -272,6 +295,26 @@ double constant_folding (struct Node_t* root)
 
         root->type  = NUM;
         root->value = answer;
+
+        count_changes++;
+    }
+
+    return count_changes;
+}
+
+int simplification_of_expression (struct Node_t* root, struct Node_t* parent)
+{
+    for (int i = 0; i < MAX_OPTIMIZATIONS; i++)
+    {
+        int changes = 0;
+
+        changes += simplification_typical_operations (root, parent);
+        changes += constant_folding (root);
+
+        fprintf (stderr, "changes = %d\n\n", changes);
+
+        if (changes == 0)
+            break;
     }
 
     return 0;

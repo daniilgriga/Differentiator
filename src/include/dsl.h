@@ -11,4 +11,13 @@
 #define _NUM(value)       new_node (NUM, (value), NULL, NULL)
 #define _VAR(value)       new_node (VAR, (value), NULL, NULL)
 
+#define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left) )
+
+#define _L         node->left
+#define _R         node->right
+#define _dL  diff (node->left)
+#define _dR  diff (node->right)
+#define _cL  copy (node->left)
+#define _cR  copy (node->right)
+
 #endif // DSL_H_

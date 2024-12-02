@@ -371,6 +371,8 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
         return 0;
     }
 
+    bool extra_brackets = 0;
+
     bool brackets = (node->left != NULL && node->right != NULL);
 
     if (node && parent && node->type == OP && parent->type == OP)
@@ -379,6 +381,12 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
 
     if (parent == NULL)
         brackets = 0;
+
+    if (parent && parent->type == OP && parent->value == SIN)
+        brackets = 1;
+
+    if (parent && parent->type == OP && parent->value == COS)
+        brackets = 1;
 
     if (node->type == OP)
         if ( (int) node->value == DIV)
@@ -406,33 +414,56 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
         if ( (int) node->value == -1)
             brackets = 1;
 
+    if ( node->type == OP && node->value == SUB && (node->right->value == SUB || node->right->value == ADD) )
+        extra_brackets = 1;
+
     if (brackets)
         tex_printf (" ( ");
 
     if (node->left)
     {
-        tex_printf (" { ");
-        tex_printf_tree_inorder (node->left, node);
-        tex_printf (" } ");
+        if (extra_brackets == 1)
+        {
+            tex_printf (" { (");
+            tex_printf_tree_inorder (node->left, node);
+            tex_printf (" } )");
+        }
+        else
+        {
+            tex_printf (" { ");
+            tex_printf_tree_inorder (node->left, node);
+            tex_printf (" } ");
+        }
     }
 
     if (node->type == NUM)
         tex_printf (" %lg ", node->value);
     else
     {
-        if (node->type == OP && node->value == MUL)
+        if (node->type == OP && node->value == MUL && parent && parent->value != SIN && parent->value != COS)
             tex_printf (" \\cdot ");
         else if (node->type == OP && node->value == DIV)
             tex_printf (" \\over ");
+        else if (node->type == OP && node->value == MUL && parent && (parent->value == SIN || parent->value == COS) )
+            tex_printf (" ");
         else
             tex_printf (" %c ", (int) node->value);
     }
 
     if (node->right)
     {
-        tex_printf (" { ");
-        tex_printf_tree_inorder (node->right, node);
-        tex_printf (" } ");
+        if (extra_brackets == 1)
+        {
+            tex_printf (" { (");
+            tex_printf_tree_inorder (node->right, node);
+            tex_printf (" } )");
+        }
+        else
+        {
+            tex_printf (" { ");
+            tex_printf_tree_inorder (node->right, node);
+            tex_printf (" } ");
+        }
     }
 
     if (brackets)
