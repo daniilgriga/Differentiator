@@ -6,6 +6,7 @@
 
 #include "tree.h"
 #include "eval.h"
+#include "enum.h"
 
 const double GlobalX = 2;
 

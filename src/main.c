@@ -6,7 +6,9 @@
 #include "tex.h"
 #include "tree.h"
 #include "eval.h"
+#include "enum.h"
 #include "diff.h"
+#include "tokens.h"
 #include "get_g.h"
 #include "file_data.h"
 #include "color_print.h"
@@ -19,16 +21,11 @@ int main (int argc, const char* argv[])
 
     const char* string = file_reader (&buffer, input);
 
-    /*struct Node_t* root = read_example (example, &buffer);
-    if (root == NULL)
-        return 1;*/
+    struct Token_t* token = tokenization (string);
 
     struct Node_t* root = new_node (ROOT, -1, NULL, NULL);
 
-    fprintf (stderr, "START of reading.\n");
-    struct Node_t* node = GetG (string);
-    fprintf (stderr, "END of reading.\n");
-
+    struct Node_t* node = GetG (token);
     root->left = node;
 
     open_log_file ("../build/dump.html");
@@ -40,13 +37,11 @@ int main (int argc, const char* argv[])
     tex_printf_tree (node, NULL, "wazzzuuuup, shut up and take my derivative of this function: \\newline ", 'y');
 
     struct Node_t* diff_node = diff (node);
-
     root->left = diff_node;
 
     dump_in_log_file (root, "diff_node --- WITHOUT simplification");
 
     simplification_of_expression (root, NULL);
-
     diff_node = root->left;
 
     tex_printf_tree (node, diff_node, "with all simplification", 'n');

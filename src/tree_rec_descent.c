@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "tokens.h"
 #include "tree.h"
 #include "dsl.h"
 #include "log.h"
 #include "get_g.h"
+#include "enum.h"
 
-const char* String   = "";
-int         Position =  0;
+struct Token_t* Token   = NULL;
+int            Position =  0;
 
 /*         GRAMMAR
  *
@@ -27,13 +29,16 @@ static struct Node_t* GetPow  (void);
 
 static void SyntaxError (int line);
 
-struct Node_t* GetG (const char* string)
+#define _IS_OP(val)  ( Token[Position].type == OP &&    \
+                         Token[Position].value == (val) )
+
+struct Node_t* GetG (struct Token_t* token)
 {
-    String = string;
+    Token = token;
 
     struct Node_t* val = GetE ();
 
-    if ( String [Position] != '$')
+    if ( !_IS_OP('$') )
         SyntaxError (__LINE__); //TODO str in format printf;
 
     Position++;
@@ -45,9 +50,11 @@ static struct Node_t* GetE (void)
 {
     struct Node_t* val = GetT ();
 
-    while ( String[Position] == '+' || String[Position] == '-' )
+    fprintf (stderr, "in Gete: val = %lg, CUR = %.10s\n", Token[Position].value, Token[Position].str);
+
+    while ( _IS_OP (ADD) || _IS_OP (SUB) )
     {
-        int op = String[Position];
+        int op = Token[Position].value;
 
         Position++;
 
@@ -66,10 +73,12 @@ static struct Node_t* GetT (void)
 {
     struct Node_t* val = GetPow ();
 
-    while ( String[Position] == '*' || String[Position] == '/' )
+    while ( _IS_OP (MUL) || _IS_OP (DIV) )
     {
-        int op = String[Position];
+        int op = Token[Position].value;
+
         Position++;
+
         struct Node_t* val2 = GetPow ();
 
         if (op == '*')
@@ -85,7 +94,7 @@ static struct Node_t* GetPow (void)
 {
     struct Node_t* node = GetP ();
 
-    while ( String[Position] == POW )
+    while ( _IS_OP (POW) )
     {
         Position++;
 
@@ -99,13 +108,16 @@ static struct Node_t* GetPow (void)
 
 static struct Node_t* GetP (void)
 {
-    if ( String[Position] == '(' )
+    if ( _IS_OP (OP_BR) )
     {
         Position++;
 
         struct Node_t* val = GetE ();
 
-        if (String[Position] != ')')
+        fprintf (stderr, "val = %lg, CUR = %.10s --- ", Token[Position].value, Token[Position].str);
+        fprintf (stderr, "node_value = %lg, node_type = %d\n\n", val->value, val->type);
+
+        if ( !_IS_OP (CL_BR) )
             SyntaxError (__LINE__);
 
         Position++;
@@ -134,9 +146,10 @@ static struct Node_t* GetV (void)
 {
     struct Node_t* node = NULL;
 
-    if (String[Position] == 'x')
+    if ( _IS_OP ('x') )
     {
-        node = _VAR (String[Position]);
+        node = _VAR (Token[Position].value);
+
         Position++;
     }
 
@@ -145,38 +158,28 @@ static struct Node_t* GetV (void)
 
 static struct Node_t* GetN (void)
 {
-    int val = 0;
-    int old_p = Position;
-
-    while ('0' <= String[Position] && String[Position] <= '9')
-    {
-        val = val * 10 + String[Position] - '0';
-        Position++;
-    }
-
-    if (old_p == Position) SyntaxError (__LINE__);
-
-    return _NUM (val);
+    if (Token[Position].type == NUM)
+        return _NUM (Token[Position].value);
 }
 
 static struct Node_t* GetFunc (void)
 {
     int func = 0;
 
-    if      ( String[Position] == 'c' ) func = 'c';
-    else if ( String[Position] == 's' ) func = 's';
+    if      ( Token[Position].value == 'c' ) func = 'c';
+    else if ( Token[Position].value == 's' ) func = 's';
     else return NULL;
 
     Position++;
 
     struct Node_t* node_E = NULL;
 
-    if ( String[Position] == '(')
+    if ( _IS_OP (OP_BR) )
     {
         Position++;
 
         node_E = GetE ();
-        if ( String[Position] != ')')
+        if ( !_IS_OP (CL_BR))
             SyntaxError (__LINE__);
 
         Position++;
@@ -194,7 +197,7 @@ static struct Node_t* GetFunc (void)
 
 static void SyntaxError (int line)
 {
-    fprintf (stderr, "ERROR in read: SyntaxError in %d line, CUR = %.10s..., SYMBOL = %c (%d)\n\n",
-                     line, String, String[Position], String[Position]);
+    fprintf (stderr, "ERROR in read: SyntaxError in %d line, CUR = %.10s..., SYMBOL = %c (%lg)\n\n",
+                     line, Token[Position].str, (int) Token[Position].value, Token[Position].value);
     exit (1);
 }

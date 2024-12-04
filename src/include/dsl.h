@@ -8,6 +8,7 @@
 #define _DIV(left, right) new_node (OP, DIV, (left), (right))
 #define _SIN(arg)         new_node (OP, SIN,  (arg),    NULL)
 #define _COS(arg)         new_node (OP, COS,  (arg),    NULL)
+#define _LN(arg)          new_node (OP,  LN,   NULL,   (arg))
 #define _NUM(value)       new_node (NUM, (value), NULL, NULL)
 #define _VAR(value)       new_node (VAR, (value), NULL, NULL)
 

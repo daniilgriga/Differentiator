@@ -11,6 +11,7 @@
 #include "log.h"
 #include "diff.h"
 #include "eval.h"
+#include "enum.h"
 #include "color_print.h"
 
 #ifdef TEST
@@ -67,7 +68,7 @@ struct Node_t* diff (struct Node_t* node)
 
                 struct Node_t* cv  = copy (v);
 
-                struct Node_t* c2v  = copy (cv);
+                struct Node_t* c2v = copy (cv);
 
                 struct Node_t* v2  = _POW (cv, _NUM (2));
 
@@ -86,11 +87,33 @@ struct Node_t* diff (struct Node_t* node)
 
             case POW:
             {
-                struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB ( _cR, _NUM(1) ) ) ) );
+                int count_x_in_base      = find_x_in_node (node->left,  0);
+                int count_x_in_indicator = find_x_in_node (node->right, 0);
 
-                tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ", 'n');
+                if (count_x_in_base != 0)
+                {
+                    struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB ( _cR, _NUM(1) ) ) ) );
 
-                return diff_node;
+                    tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ", 'n');
+
+                    return diff_node;
+                }
+
+                if (count_x_in_indicator != 0)
+                {
+                    struct Node_t* node_1    = _POW ( _cL, _cR );
+                    struct Node_t* node_2    = _LN ( _cL );
+
+                    struct Node_t* diff_node = _MUL ( node_1, node_2 );
+
+                    tex_printf_tree (node, diff_node, "Znamenskaya left the audience after that: ", 'n');
+
+                    return diff_node;
+                }
+
+                // TODO - x^x
+
+                return NULL;;
             }
 
             case SIN:
@@ -288,7 +311,7 @@ double constant_folding (struct Node_t* root)
     if (root->right)
         count_changes += constant_folding (root->right);
 
-    if (root->type == OP && root->left->type == NUM && root->right->type == NUM)
+    if (root->left != NULL && root->right != NULL && root->type == OP && root->left->type == NUM && root->right->type == NUM)
     {
         double answer = eval (root);
         fprintf (stderr, "\nlol im in if: node [%p]: answer = %lg\n\n", root, answer);
@@ -318,4 +341,16 @@ int simplification_of_expression (struct Node_t* root, struct Node_t* parent)
     }
 
     return 0;
+}
+
+int find_x_in_node (struct Node_t* node, int counter)
+{
+    if (node->type == VAR && (int) node->value == 'x')
+        counter++;
+
+    if (node->left)  find_x_in_node (node->left, counter);
+
+    if (node->right) find_x_in_node (node->right, counter);
+
+    return counter;
 }

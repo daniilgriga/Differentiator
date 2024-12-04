@@ -11,4 +11,6 @@ int simplification_of_expression (struct Node_t* root, struct Node_t* parent);
 
 void verificator (struct Node_t* node, const char* filename, int line);
 
+int find_x_in_node (struct Node_t* node, int counter);
+
 #endif // DIFF_H_

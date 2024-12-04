@@ -3,17 +3,8 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "tree.h"
+#include "enum.h"
 #include "tokens.h"
-
-int main (void)
-{
-    const char* string = "(8+9)*(9/2-3)";
-
-    const struct Token_t* token = tokenization (string);
-
-    return 0;
-}
 
 struct Token_t* tokenization (const char* string)
 {
@@ -24,7 +15,7 @@ struct Token_t* tokenization (const char* string)
     int i = 0;
     int count_tokens = 0;
 
-    while (string[i] != '\0')
+    while (string[i] != '$')
     {
         i = skip_spaces (string, length_string, i);
 

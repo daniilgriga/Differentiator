@@ -18,26 +18,6 @@ struct Buffer_t
     long file_size;
 };
 
-enum symbols
-{
-    NUM  = 1,
-    OP   = 2,
-    VAR  = 3,
-    ROOT = -1
-};
-
-enum operations
-{
-    ADD = '+',
-    SUB = '-',
-    DIV = '/',
-    MUL = '*',
-    SIN = 's',
-    COS = 'c',
-    POW = '^',
-    LOG = 'l'
-};
-
 struct Node_t* new_node (int type, double value, struct Node_t* node_left, struct Node_t* node_right);
 
 int print_tree_preorder    (struct Node_t* node, FILE* filename);

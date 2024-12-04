@@ -14,6 +14,7 @@
 #include "diff.h"
 #include "tex.h"
 #include "color_print.h"
+#include "enum.h"
 
 static struct Node_t* GlobalNode = NULL;
 
@@ -326,6 +327,9 @@ int its_func_is_root (struct Node_t* node)
     if (node->type == OP && (int) node->value == 'c')
         return 1;
 
+    if (node->type == OP && (int) node->value == 'l')
+        return 1;
+
     return 0;
 }
 
@@ -349,10 +353,29 @@ void print_func_in_tex (struct Node_t* node, struct Node_t* parent)
             tex_printf ("cos ");
     }
 
+    if ( (int) node->value == LN)
+    {
+        if (parent != NULL && parent->value == POW)
+            tex_printf ("(ln ");
+        else
+            tex_printf ("ln ");
+    }
+
    if (node->left)
     {
         tex_printf (" { ");
         tex_printf_tree_inorder (node->left, node);
+
+        if (parent != NULL && parent->value == POW)
+            tex_printf (")");
+
+        tex_printf (" } ");
+    }
+
+    if (node->right)
+    {
+        tex_printf (" { ");
+        tex_printf_tree_inorder (node->right, node);
 
         if (parent != NULL && parent->value == POW)
             tex_printf (")");
@@ -523,6 +546,7 @@ int priority (int op)
         case SUB: return 3;
 
         case MUL: return 4;
+
         case DIV: return 0;
 
         case POW: return 2;
@@ -530,6 +554,8 @@ int priority (int op)
         case SIN: return 1;
 
         case COS: return 1;
+
+        case LN:  return 1;
 
         default:
             printf ("priority of operation %d (%c) dont exists\n", op, op);
@@ -543,7 +569,6 @@ void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
     //assert (filename);
 
     //assert (node->type == NUM || node->type == OP || node->type == VAR);
-
 
     if (node->type == NUM)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | value = %g   | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
