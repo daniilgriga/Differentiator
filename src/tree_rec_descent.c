@@ -12,10 +12,13 @@ struct Token_t* Token   = NULL;
 int            Position =  0;
 
 /*         GRAMMAR
+ *  G ::= E
+ *  E ::= T{['+''-']T}*
+ *  T ::= P{['*''/']P}*
+ *  P ::= '('E')' | V | N
  *
- *
- *
- *
+ *  V ::= ['x']
+ *  N ::= ['0','9']+
  */
 
 static struct Node_t* GetE (void);
@@ -29,8 +32,8 @@ static struct Node_t* GetPow  (void);
 
 static void SyntaxError (int line);
 
-#define _IS_OP(val)  ( Token[Position].type == OP &&    \
-                         Token[Position].value == (val) )
+#define _IS_OP(val)  ( Token[Position].type == OP &&  \
+                       Token[Position].value == (val) )
 
 struct Node_t* GetG (struct Token_t* token)
 {
@@ -38,8 +41,8 @@ struct Node_t* GetG (struct Token_t* token)
 
     struct Node_t* val = GetE ();
 
-    if ( !_IS_OP('$') )
-        SyntaxError (__LINE__); //TODO str in format printf;
+    //if ( !_IS_OP('$') )
+    //    SyntaxError (__LINE__); //TODO str in format printf;
 
     Position++;
 
@@ -50,8 +53,6 @@ static struct Node_t* GetE (void)
 {
     struct Node_t* val = GetT ();
 
-    fprintf (stderr, "in Gete: val = %lg, CUR = %.10s\n", Token[Position].value, Token[Position].str);
-
     while ( _IS_OP (ADD) || _IS_OP (SUB) )
     {
         int op = Token[Position].value;
@@ -60,7 +61,7 @@ static struct Node_t* GetE (void)
 
         struct Node_t* val2 = GetT ();
 
-        if (op == '+')
+        if (op == ADD)
             val = _ADD (val, val2);
         else
             val = _SUB (val, val2);
@@ -81,7 +82,7 @@ static struct Node_t* GetT (void)
 
         struct Node_t* val2 = GetPow ();
 
-        if (op == '*')
+        if (op == MUL)
             val = _MUL (val, val2);
         else
             val = _DIV (val, val2);
@@ -114,9 +115,6 @@ static struct Node_t* GetP (void)
 
         struct Node_t* val = GetE ();
 
-        fprintf (stderr, "val = %lg, CUR = %.10s --- ", Token[Position].value, Token[Position].str);
-        fprintf (stderr, "node_value = %lg, node_type = %d\n\n", val->value, val->type);
-
         if ( !_IS_OP (CL_BR) )
             SyntaxError (__LINE__);
 
@@ -132,10 +130,10 @@ static struct Node_t* GetP (void)
             return node_V;
         else
         {
-            struct Node_t* node_F = GetFunc ();
-            if (node_F != NULL)
-                return node_F;
-            else
+            //struct Node_t* node_F = GetFunc ();
+            //if (node_F != NULL)
+            //    return node_F;
+            //else
                 return GetN ();
         }
 
@@ -146,7 +144,8 @@ static struct Node_t* GetV (void)
 {
     struct Node_t* node = NULL;
 
-    if ( _IS_OP ('x') )
+    if ( Token[Position].type  == VAR &&
+         Token[Position].value == 'x'   )
     {
         node = _VAR (Token[Position].value);
 
@@ -159,7 +158,13 @@ static struct Node_t* GetV (void)
 static struct Node_t* GetN (void)
 {
     if (Token[Position].type == NUM)
-        return _NUM (Token[Position].value);
+    {
+        struct Node_t* node = _NUM (Token[Position].value);
+
+        Position++;
+
+        return node;
+    }
 }
 
 static struct Node_t* GetFunc (void)

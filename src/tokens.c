@@ -6,12 +6,22 @@
 #include "enum.h"
 #include "tokens.h"
 
+int mmain (void)
+{
+    const char* string = "(8+9)*(5/2-3)$";
+
+    const struct Token_t* token = tokenization (string);
+
+    return 0;
+}
+
 struct Token_t* tokenization (const char* string)
 {
     static struct Token_t tokens[MAX_SIZE_TOKENS] = {};
 
     int length_string = strlen (string);
 
+    fprintf (stderr, "START_STRING = %s\n\n", string);
     int i = 0;
     int count_tokens = 0;
 
@@ -84,7 +94,7 @@ struct Token_t* tokenization (const char* string)
             continue;
         }
 
-        if (strchr ("+-*/()", string[i]) != NULL)
+        if (strchr ("+-*/()^", string[i]) != NULL)
         {
             int value = check_keyword (&string[start_i], 1);
 
@@ -156,23 +166,23 @@ int tokens_dump (const struct Token_t* token)
     switch (token->type)
     {
         case OP:
-            fprintf (stderr, "token_type = OP ||| token_op_code = %c (%lg)\n",
-                             (int) token->value, token->value);
+            fprintf (stderr, "token_type = OP ||| CUR = [%p] ||| token_op_code = '%c' (%lg)\n",
+                             token, (int) token->value, token->value);
             break;
 
         case NUM:
-            fprintf (stderr, "token_type = NUM ||| token_value = %lg\n",
-                             token->value);
+            fprintf (stderr, "token_type = NUM ||| CUR = [%p] ||| token_value = %lg\n",
+                             token, token->value);
             break;
 
         case ID:
-            fprintf (stderr, "token_type = ID ||| token_str = %s ||| token_length = %d\n",
-                             token->str, token->length);
+            fprintf (stderr, "token_type = ID ||| CUR = [%p] ||| token_str = '%s' ||| token_length = %d\n",
+                             token, token->str, token->length);
             break;
 
         case VAR:
-            fprintf (stderr, "token_type = VAR ||| token_str = %c (%lg)\n",
-                             (int) token->value, token->value);
+            fprintf (stderr, "token_type = VAR ||| CUR = [%p] ||| token_str = '%c' (%lg)\n",
+                             token, (int) token->value, token->value);
             break;
 
         default:

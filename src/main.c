@@ -21,12 +21,17 @@ int main (int argc, const char* argv[])
 
     const char* string = file_reader (&buffer, input);
 
+    fprintf (stderr, BLUE_TEXT("START Tokenization\n\n"));
     struct Token_t* token = tokenization (string);
+    fprintf (stderr, BLUE_TEXT("\nEND Tokenization\n\n"));
 
     struct Node_t* root = new_node (ROOT, -1, NULL, NULL);
 
+
+    fprintf (stderr, BLUE_TEXT("\nSTART Rec_descent\n\n"));
     struct Node_t* node = GetG (token);
     root->left = node;
+    fprintf (stderr, BLUE_TEXT("\nEND Rec_descent\n\n"));
 
     open_log_file ("../build/dump.html");
 
