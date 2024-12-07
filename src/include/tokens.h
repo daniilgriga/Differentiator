@@ -41,9 +41,9 @@ struct Context_t
     struct Token_t           token[MAX_SIZE];
 };
 
-int ctor_keywords (struct Context_t* context);
-
 int add_struct_in_keywords (struct Context_t* context, const char* str, enum Operations code, int length);
+
+int ctor_keywords (struct Context_t* context);
 
 int name_table_dump (struct Context_t* context);
 
@@ -51,7 +51,7 @@ int tokenization (struct Context_t* context, const char* string);
 
 int check_keyword (struct Context_t* context, const char* str, int length);
 
-int tokens_dump (struct Context_t* context);
+int tokens_dump (struct Context_t* context, int old_count);
 
 int skip_spaces (const char* string, int length, int current_i);
 

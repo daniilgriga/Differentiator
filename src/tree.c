@@ -194,11 +194,11 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
 {
     assert (node && "node is NULL in tex_printf_tree_inorder");
 
-    if (its_func_is_root (node))
+    /*if (its_func_is_root (node))
     {
         print_func_in_tex (node, parent);
         return 0;
-    }
+    }*/
 
     bool extra_brackets = 0;
 

@@ -9,12 +9,13 @@
 
 int mmain (void)
 {
+    struct Context_t context = {};
 
-    struct Context_t context[MAX_SIZE] = {};
+    ctor_keywords (&context);
 
-    const char* string = "sin(temp+5*size)/kek$";
+    const char* string = "sin(temp+5*size)/kek+LOOH$";
 
-    int error = tokenization (context, string);
+    int error = tokenization (&context, string);
 
     if (error != 0)
         return 1;
@@ -29,8 +30,8 @@ int tokenization (struct Context_t* context, const char* string)
     fprintf (stderr, PURPLE_TEXT("\nSTART_STRING = %s\n\n"), string);
     int i = 0;
 
-    int count_tables = 0;
-    int count_tokens = 0;
+    int old_size      = context->table_size;
+    int count_tokens  = 0;
 
     while (string[i] != '$')
     {
@@ -68,7 +69,7 @@ int tokenization (struct Context_t* context, const char* string)
                 add_struct_in_keywords (context, &string[start_i], ID, length);
 
                 context->token[count_tokens].type  = ID;
-                context->token[count_tokens].value = count_tables;
+                context->token[count_tokens].value = context->table_size;
 
                 count_tokens++;
             }
@@ -113,7 +114,7 @@ int tokenization (struct Context_t* context, const char* string)
 
     fprintf (stderr, BLUE_TEXT("\nTOKENS DUMP:\n\n"));
 
-    tokens_dump (context);
+    tokens_dump (context, old_size);
 
     fprintf (stderr, BLUE_TEXT("\n\nNAME TABLE DUMP:\n\n"));
 
@@ -124,10 +125,9 @@ int tokenization (struct Context_t* context, const char* string)
 
 int check_keyword (struct Context_t* context, const char* str, int length)
 {
-    if (context != NULL)
-        for (int i = 0; i < context->table_size; i++)
-            if ( strncmp (str, context->name_table[context->table_size - 1].name.str_pointer, length) == 0 )
-                return context->name_table[context->table_size].name.code;
+    for (int i = 0; i < context->table_size; i++)
+        if ( strncmp (str, context->name_table[i].name.str_pointer, length) == 0 )
+            return context->name_table[i].name.code;
 
     return -1;
 }
@@ -143,7 +143,7 @@ int skip_spaces (const char* string, int length, int current_i)
     return i;
 }
 
-int tokens_dump (struct Context_t* context)
+int tokens_dump (struct Context_t* context, int old_size)
 {
     if (context == NULL)
     {
@@ -151,8 +151,10 @@ int tokens_dump (struct Context_t* context)
         return 1;
     }
 
-    int Id_count = context->table_size - 1;
+    int Id_count = context->table_size - (context->table_size - old_size);
     int j = 0;
+
+    fprintf (stderr, "\n\nId_c = %d, cntxt->tbl_sz = %d\n\n", Id_count, context->table_size);
 
     while (context->token[j].type != 0)
     {
@@ -160,19 +162,20 @@ int tokens_dump (struct Context_t* context)
         {
             case OP:
                 fprintf (stderr, BLUE_TEXT("[%.2d] ") "token_type = OP  ||| ADDRESS = [%p] ||| token_value = '%c' (%lg)\n",
-                                 j, context->token, (int) context->token[j].value, context->token[j].value);
+                                 j, context[j].token, (int) context->token[j].value, context->token[j].value);
                 break;
 
             case NUM:
                 fprintf (stderr, BLUE_TEXT("[%.2d] ") "token_type = NUM ||| ADDRESS = [%p] ||| token_value = %lg\n",
-                                 j, context->token, context->token[j].value);
+                                 j, context[j].token, context->token[j].value);
                 break;
 
             case ID:
                 fprintf (stderr, BLUE_TEXT("[%.2d] ") GREEN_TEXT("token_type = ID  ||| ADDRESS = [%p] ||| token_value = ") BLUE_TEXT("[%lg]\n"), // NOTE in name_table
-                                 j, context->token, context->token[j].value);
+                                 j, context[j].token, context->token[j].value - 1); //NOTE
+
                 fprintf (stderr, GREEN_TEXT ("     ADDRESS = [%p], name = '%.*s', length = %zu\n\n"),
-                                 context->name_table, (int) context->name_table[Id_count].name.length, context->name_table[Id_count].name.str_pointer, context->name_table[Id_count].name.length);
+                                 context[Id_count].name_table, (int) context->name_table[Id_count].name.length, context->name_table[Id_count].name.str_pointer, context->name_table[Id_count].name.length);
 
                 Id_count++;
 

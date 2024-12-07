@@ -129,7 +129,7 @@ static struct Node_t* GetP (struct Context_t* context)
 
         struct Node_t* node_ID = GetId (context);
 
-        fprintf (stderr, "we got it: value = '%c'\n", (int) node_ID->value);
+        //fprintf (stderr, "we got it: value = '%c'\n", (int) node_ID->value);
 
         if (node_ID != NULL)
             return node_ID;
