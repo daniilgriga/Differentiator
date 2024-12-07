@@ -1,9 +1,10 @@
 #ifndef TOKENS_H_
 #define TOKENS_H_
 
-#define MAX_SIZE_TOKENS    1000
+#define MAX_SIZE           100
 #define MAX_SIZE_OPERATOR  20
-#define AMOUNT_OF_KEYWORDS 10
+
+#include "enum.h"
 
 struct Token_t
 {
@@ -17,11 +18,40 @@ struct Token_t
     struct Token_t* right;
 };
 
-struct Token_t* tokenization (const char* string);
+struct Name_t
+{
+    const char* str_pointer;
+    size_t length;
 
-int check_keyword (const char* str, int length);
+    enum Operations code;
+    int is_keyword;
+};
 
-int tokens_dump (const struct Token_t* token);
+struct NameTable_t
+{
+    struct Name_t name;
+    int size;
+};
+
+struct Context_t
+{
+    struct  NameTable_t name_table[MAX_SIZE];
+    int table_size;
+
+    struct Token_t           token[MAX_SIZE];
+};
+
+int ctor_keywords (struct Context_t* context);
+
+int add_struct_in_keywords (struct Context_t* context, const char* str, enum Operations code, int length);
+
+int name_table_dump (struct Context_t* context);
+
+int tokenization (struct Context_t* context, const char* string);
+
+int check_keyword (struct Context_t* context, const char* str, int length);
+
+int tokens_dump (struct Context_t* context);
 
 int skip_spaces (const char* string, int length, int current_i);
 

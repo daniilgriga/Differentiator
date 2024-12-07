@@ -3,6 +3,6 @@
 
 struct Token_t;
 
-struct Node_t* GetG (struct Token_t* token);
+struct Node_t* GetG (struct Context_t* context);
 
 #endif // GET_G_H_

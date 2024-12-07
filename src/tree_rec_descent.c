@@ -8,8 +8,9 @@
 #include "get_g.h"
 #include "enum.h"
 
-struct Token_t* Token   = NULL;
-int            Position =  0;
+int Position =  0;
+
+#define MOVE_POSITION Position++
 
 /*         GRAMMAR
  *  G ::= E
@@ -17,49 +18,47 @@ int            Position =  0;
  *  T ::= P{['*''/']P}*
  *  P ::= '('E')' | V | N
  *
- *  V ::= ['x']
- *  N ::= ['0','9']+
+ *  Id ::= ['a'-'z']+
+ *  N  ::= ['0'-'9']+
  */
 
-static struct Node_t* GetE (void);
-static struct Node_t* GetT (void);
-static struct Node_t* GetP (void);
-static struct Node_t* GetN (void);
-static struct Node_t* GetV (void);
+static struct Node_t*  GetE (struct Context_t* context);
+static struct Node_t*  GetT (struct Context_t* context);
+static struct Node_t*  GetP (struct Context_t* context);
+static struct Node_t*  GetN (struct Context_t* context);
+static struct Node_t* GetId (struct Context_t* context);
 
-static struct Node_t* GetFunc (void);
-static struct Node_t* GetPow  (void);
+static struct Node_t* GetFunc (struct Context_t* context);
+static struct Node_t* GetPow  (struct Context_t* context);
 
-static void SyntaxError (int line);
+static void SyntaxError (struct Context_t* context, int line);
 
-#define _IS_OP(val)  ( Token[Position].type == OP &&  \
-                       Token[Position].value == (val) )
+#define _IS_OP(val)  ( context->token[Position].type  == OP && \
+                       context->token[Position].value == (val) )
 
-struct Node_t* GetG (struct Token_t* token)
+struct Node_t* GetG (struct Context_t* context)
 {
-    Token = token;
+    struct Node_t* val = GetE (context);
 
-    struct Node_t* val = GetE ();
+    if ( !_IS_OP('$') )
+        SyntaxError (context, __LINE__); // TODO str in format printf;
 
-    //if ( !_IS_OP('$') )
-    //    SyntaxError (__LINE__); //TODO str in format printf;
-
-    Position++;
+    MOVE_POSITION;
 
     return val;
 }
 
-static struct Node_t* GetE (void)
+static struct Node_t* GetE (struct Context_t* context)
 {
-    struct Node_t* val = GetT ();
+    struct Node_t* val = GetT (context);
 
     while ( _IS_OP (ADD) || _IS_OP (SUB) )
     {
-        int op = Token[Position].value;
+        int op = context->token[Position].value;
 
-        Position++;
+        MOVE_POSITION;
 
-        struct Node_t* val2 = GetT ();
+        struct Node_t* val2 = GetT (context);
 
         if (op == ADD)
             val = _ADD (val, val2);
@@ -70,17 +69,17 @@ static struct Node_t* GetE (void)
     return val;
 }
 
-static struct Node_t* GetT (void)
+static struct Node_t* GetT (struct Context_t* context)
 {
-    struct Node_t* val = GetPow ();
+    struct Node_t* val = GetPow (context);
 
     while ( _IS_OP (MUL) || _IS_OP (DIV) )
     {
-        int op = Token[Position].value;
+        int op = context->token[Position].value;
 
-        Position++;
+        MOVE_POSITION;
 
-        struct Node_t* val2 = GetPow ();
+        struct Node_t* val2 = GetPow (context);
 
         if (op == MUL)
             val = _MUL (val, val2);
@@ -91,15 +90,15 @@ static struct Node_t* GetT (void)
     return val;
 }
 
-static struct Node_t* GetPow (void)
+static struct Node_t* GetPow (struct Context_t* context)
 {
-    struct Node_t* node = GetP ();
+    struct Node_t* node = GetP (context);
 
     while ( _IS_OP (POW) )
     {
-        Position++;
+        MOVE_POSITION;
 
-        struct Node_t* exp = GetP ();
+        struct Node_t* exp = GetP (context);
 
         node = _POW (node, exp);
     }
@@ -107,87 +106,92 @@ static struct Node_t* GetPow (void)
     return node;
 }
 
-static struct Node_t* GetP (void)
+static struct Node_t* GetP (struct Context_t* context)
 {
+    fprintf (stderr, "\nIN GetP:\n");
+
     if ( _IS_OP (OP_BR) )
     {
-        Position++;
+        MOVE_POSITION;
 
-        struct Node_t* val = GetE ();
+        struct Node_t* val = GetE (context);
 
         if ( !_IS_OP (CL_BR) )
-            SyntaxError (__LINE__);
+            SyntaxError (context, __LINE__);
 
-        Position++;
+        MOVE_POSITION;
 
         return val;
     }
     else
     {
-        struct Node_t* node_V = GetV ();
+        fprintf (stderr, "waiting for GetId:\n");
 
-        if (node_V != NULL)
-            return node_V;
+        struct Node_t* node_ID = GetId (context);
+
+        fprintf (stderr, "we got it: value = '%c'\n", (int) node_ID->value);
+
+        if (node_ID != NULL)
+            return node_ID;
         else
         {
+            return GetN (context);
             //struct Node_t* node_F = GetFunc ();
             //if (node_F != NULL)
             //    return node_F;
             //else
-                return GetN ();
         }
 
     }
 }
 
-static struct Node_t* GetV (void)
+static struct Node_t* GetId (struct Context_t* context)
 {
     struct Node_t* node = NULL;
 
-    if ( Token[Position].type  == VAR &&
-         Token[Position].value == 'x'   )
+    if ( context->token[Position].type  == ID )
     {
-        node = _VAR (Token[Position].value);
+        node = _ID (context->token[Position].value);
 
-        Position++;
+        MOVE_POSITION;
     }
 
     return node;
 }
 
-static struct Node_t* GetN (void)
+static struct Node_t* GetN (struct Context_t* context)
 {
-    if (Token[Position].type == NUM)
+    if (context->token[Position].type == NUM)
     {
-        struct Node_t* node = _NUM (Token[Position].value);
+        struct Node_t* node = _NUM (context->token[Position].value);
 
-        Position++;
+        MOVE_POSITION;
 
         return node;
     }
 }
 
-static struct Node_t* GetFunc (void)
+static struct Node_t* GetFunc (struct Context_t* context)
 {
     int func = 0;
 
-    if      ( Token[Position].value == 'c' ) func = 'c';
-    else if ( Token[Position].value == 's' ) func = 's';
+    if      ( context->token[Position].value == 'c' ) func = 'c';
+    else if ( context->token[Position].value == 's' ) func = 's';
     else return NULL;
 
-    Position++;
+    MOVE_POSITION;
 
     struct Node_t* node_E = NULL;
 
     if ( _IS_OP (OP_BR) )
     {
-        Position++;
+        MOVE_POSITION;
 
-        node_E = GetE ();
+        node_E = GetE (context);
         if ( !_IS_OP (CL_BR))
-            SyntaxError (__LINE__);
+            SyntaxError (context, __LINE__);
 
-        Position++;
+        MOVE_POSITION;
 
         struct Node_t* node_F = NULL;
 
@@ -197,12 +201,13 @@ static struct Node_t* GetFunc (void)
         return node_F;
     }
     else
-        SyntaxError (__LINE__);
+        SyntaxError (context, __LINE__);
 }
 
-static void SyntaxError (int line)
+static void SyntaxError (struct Context_t* context, int line)
 {
     fprintf (stderr, "ERROR in read: SyntaxError in %d line, CUR = %.10s..., SYMBOL = %c (%lg)\n\n",
-                     line, Token[Position].str, (int) Token[Position].value, Token[Position].value);
+                     line, context->token[Position].str, (int) context->token[Position].value, context->token[Position].value);
+
     exit (1);
 }

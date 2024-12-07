@@ -24,200 +24,6 @@ static struct Node_t* GlobalNode = NULL;
     #define ON_DBG(...)
 #endif
 
-struct Node_t* read_example (FILE* file, struct Buffer_t* buffer)
-{
-    assert (file   && "FILE* is NULL\n");
-    assert (buffer && "buffer is NULL\n");
-
-    struct stat st = {};
-    fstat (fileno (file), &st);
-    long file_size = st.st_size;
-
-    buffer->buffer_ptr = (char*) calloc ( (size_t) file_size + 1, sizeof(buffer->buffer_ptr[0]));
-
-    size_t count = fread (buffer->buffer_ptr, sizeof(buffer->buffer_ptr[0]), (size_t) file_size, file);
-    if ((long) count != file_size)
-    {
-        printf ("count = %zu != file_size = %ld", count, file_size);
-        return NULL;
-    }
-
-    fclose (file);
-
-    buffer->current_ptr = buffer->buffer_ptr;
-
-    return read_node (0, buffer);
-}
-
-#define INDENT      fprintf (stderr, "%*s", level*2, "")
-
-#define PRINT(...)  { int n =  fprintf (stderr, "%s:%d: ", __FILE__, __LINE__);                       \
-                          n += fprintf (stderr, "%*s", level*2, "");                                  \
-                          n += fprintf (stderr, __VA_ARGS__);                                         \
-                          n += fprintf (stderr, "%*s" "Cur = '%.25s'..., [%p].\n",                    \
-                                                100-n, "", buffer->current_ptr, buffer->current_ptr); }
-
-struct Node_t* read_node (int level, struct Buffer_t* buffer)
-{
-    assert (buffer && "buffer is NULL in read_node()\n");
-
-    ON_DBG ( fprintf (stderr, "\n"); )
-    ON_DBG ( PRINT ("Starting read_node()."); )
-
-    int n = -1;
-    sscanf (buffer->current_ptr, " ( %n", &n);
-    if (n < 0) { ON_DBG ( PRINT ("No '(' found. Return NULL."); ) return NULL; }
-
-    buffer->current_ptr += n;
-
-    ON_DBG ( PRINT ("Got an '('. Creating a node."); )
-
-    struct Node_t* node = NULL;
-
-    node = new_node (0, 0, NULL, NULL);
-
-    n = -1;
-    int bgn = 0;
-    int end = 0;
-    sscanf (buffer->current_ptr, " %n%*[^()]%n %n", &bgn, &end, &n);
-    if (n < 0) { PRINT ("No value found. Return NULL."); return NULL; }
-
-    char temp = 0;
-    double temp_dbl = 0;
-
-    if (sscanf (buffer->current_ptr + bgn, " %lg ", &temp_dbl) != 0)
-    {
-        node->value = temp_dbl;
-        node->type = NUM;
-
-        ON_DBG ( PRINT ("IN DOUBLE: Got a NAME: '%lg'.", node->value); )
-
-        buffer->current_ptr += n;
-        ON_DBG ( PRINT ("CURRENT_PTR was shifted."); )
-
-        read_node_double (node, level, buffer);
-    }
-    else
-    {
-        sscanf (buffer->current_ptr + bgn, " %c ", &temp);
-
-        node->value = (int) temp;
-
-        if (temp == 'x')
-            node->type = VAR;
-        else
-            node->type = OP;
-
-        ON_DBG ( PRINT ("IN SYMBOL: Got a NAME: '%c' (%d). n = %d.", (int) node->value, (int) node->value, n); )
-
-        buffer->current_ptr += n;
-        ON_DBG ( PRINT ("CURRENT_PTR was shifted."); )
-
-        read_node_symbol (node, level, buffer);
-    }
-}
-
-struct Node_t* read_node_double (struct Node_t* node, int level, struct Buffer_t* buffer)
-{
-    assert (node   &&   "node is NULL in read_double_func");
-    assert (buffer && "buffer is NULL in read_double_func");
-
-    int n = -1;
-    char chr = '\0';
-    sscanf (buffer->current_ptr, " %c %n", &chr, &n);
-    if (n < 0) { ON_DBG ( PRINT ("No ending symbol (1) found. Return NULL."); ) return NULL; }
-
-    if (chr == ')')
-    {
-        buffer->current_ptr += n;
-
-        ON_DBG ( PRINT ("Got a ')', SHORT Node END (value = '%lg'). Return node.", node->value); )
-
-        return node;
-    }
-
-    ON_DBG ( PRINT ("')' NOT found. Supposing a left/right subtree. Reading left node."); )
-
-    node->left = read_node (level + 1, buffer);
-
-    ON_DBG ( PRINT ("LEFT subtree read. value of left node = '%lg'", node->left->value); )
-
-    ON_DBG ( PRINT ("Reading right node."); )
-
-    node->right = read_node (level + 1, buffer);
-
-    ON_DBG ( PRINT ("RIGHT subtree read. value of right node = '%lg'", node->right->value); )
-
-    chr = '\0';
-    sscanf (buffer->current_ptr, " %c %n", &chr, &n);
-    if (n < 0) { ON_DBG ( PRINT ("No ending symbol (2) found. Return NULL."); ) return NULL; }
-
-    if (chr == ')')
-    {
-        buffer->current_ptr += n;
-
-        ON_DBG ( PRINT ("Got a ')', FULL Node END (value = '%lg'). Return node.", node->value); )
-
-        return node;
-    }
-
-    ON_DBG ( PRINT ("Does NOT get ')'. Syntax error. Return NULL."); )
-
-    return NULL;
-}
-
-struct Node_t* read_node_symbol (struct Node_t* node, int level, struct Buffer_t* buffer)
-{
-    assert (node   &&   "node is NULL in read_symbol_func");
-    assert (buffer && "buffer is NULL in read_symbol_func");
-
-    int n = -1;
-    char chr = '\0';
-    sscanf (buffer->current_ptr, " %c %n", &chr, &n);
-    if (n < 0) { ON_DBG ( PRINT ("No ending symbol (1) found. Return NULL."); ) return NULL; }
-
-    if (chr == ')')
-    {
-        buffer->current_ptr += n;
-
-        ON_DBG ( PRINT ("Got a ')', SHORT Node END (value = '%c'). Return node.", (int) node->value); )
-
-        return node;
-    }
-
-    ON_DBG ( PRINT ("')' NOT found. Supposing a left/right subtree. Reading left node."); )
-
-    node->left = read_node (level + 1, buffer);
-
-    ON_DBG ( PRINT ("LEFT subtree read. value of left node = '%c' (%lg), TYPE %d", (int) node->left->value, node->left->value, node->left->type); )
-
-    ON_DBG ( PRINT ("Reading right node."); )
-
-    node->right = read_node (level + 1, buffer);
-
-    ON_DBG ( PRINT ("RIGHT subtree read. value of right node = '%c' (%lg), TYPE %d", (int) node->right->value, node->right->value, node->right->type); )
-
-    chr = '\0';
-    sscanf (buffer->current_ptr, " %c %n", &chr, &n);
-    if (n < 0) { ON_DBG ( PRINT ("No ending symbol (2) found. Return NULL."); ) return NULL; }
-
-    if (chr == ')')
-    {
-        buffer->current_ptr += n;
-
-        ON_DBG ( PRINT ("Got a ')', FULL Node END (value = '%c'). Return node.", (int) node->value); )
-
-        return node;
-    }
-
-    ON_DBG ( PRINT ("Does NOT get ')'. Syntax error. Return NULL."); )
-
-    return NULL;
-}
-
-#undef INDENT
-#undef PRINT
-
 struct Node_t* new_node (int type, double value, struct Node_t* node_left, struct Node_t* node_right)
 {
     struct Node_t* node = (struct Node_t*) calloc (1, sizeof(*node));
@@ -321,13 +127,13 @@ int its_func_is_root (struct Node_t* node)
 {
     assert (node);
 
-    if (node->type == OP && (int) node->value == 's')
+    if (node->type == OP && (int) node->value == SIN)
         return 1;
 
-    if (node->type == OP && (int) node->value == 'c')
+    if (node->type == OP && (int) node->value == COS)
         return 1;
 
-    if (node->type == OP && (int) node->value == 'l')
+    if (node->type == OP && (int) node->value == LN)
         return 1;
 
     return 0;
@@ -568,19 +374,19 @@ void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
     //assert (node);
     //assert (filename);
 
-    //assert (node->type == NUM || node->type == OP || node->type == VAR);
+    //assert (node->type == NUM || node->type == OP || node->type == ID);
 
     if (node->type == NUM)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM) | value = %g   | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (NUM)  | value = %g   | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#FFD700\"];\n",
              node, node, node->type, node->value, node->left, node->right);
     else if (node->type == OP)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP)  | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP)   | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
              node, node, node->type, (int) node->value, node->left, node->right);
-    else if (node->type == VAR)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
-             node, node, node->type, (int) node->value, node->left, node->right);
+    else if (node->type == ID)
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (ID)   | value = '' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
+             node, node, node->type /*, (int) node->value*/, node->left, node->right);
     else if (node->type == ROOT)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (VAR) | value = '%lg' | { son_node = [%p] } }\"; style = filled; fillcolor = \"#F0FFFF\"];\n",
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (ROOT) | value = '%lg' | { son_node = [%p] } }\"; style = filled; fillcolor = \"#F0FFFF\"];\n",
              node, node, node->type, node->value, node->left);
 
     if (node->left)

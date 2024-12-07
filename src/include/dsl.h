@@ -10,7 +10,7 @@
 #define _COS(arg)         new_node (OP, COS,  (arg),    NULL)
 #define _LN(arg)          new_node (OP,  LN,   NULL,   (arg))
 #define _NUM(value)       new_node (NUM, (value), NULL, NULL)
-#define _VAR(value)       new_node (VAR, (value), NULL, NULL)
+#define _ID(value)        new_node (ID,  (value), NULL, NULL)
 
 #define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left) )
 
