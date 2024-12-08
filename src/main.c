@@ -41,15 +41,15 @@ int main (int argc, const char* argv[])
     open_log_file ("../build/dump.html");
 
     fprintf (stderr, "root = [%p] || type: %d, root->value = %lg, root->left = [%p] || type: %d, root->left->value = %lg\n",
-                      root, root->type, root->value, root->left, root->type, root->left->value);
+                      root, root->type, root->value, root->left, root->left->type, root->left->value);
 
     dump_in_log_file (root, "node --- start of programm");
 
     open_tex_file ("output.tex");
 
-    tex_printf_tree (node, NULL, "wazzzuuuup, shut up and take my derivative of this function: \\newline ", 'y');
+    tex_printf_tree (node, NULL, &context, "wazzzuuuup, shut up and take my derivative of this function: \\newline ", 'y');
 
-    struct Node_t* diff_node = diff (node);
+    struct Node_t* diff_node = node; //diff (node);
     root->left = diff_node;
 
     dump_in_log_file (root, "diff_node --- WITHOUT simplification");
@@ -57,7 +57,7 @@ int main (int argc, const char* argv[])
     simplification_of_expression (root, NULL);
     diff_node = root->left;
 
-    tex_printf_tree (node, diff_node, "with all simplification", 'n');
+    tex_printf_tree (node, diff_node, &context, "with all simplification", 'n');
 
     dump_in_log_file (root, "diff_node --- WITH all simplification");
 

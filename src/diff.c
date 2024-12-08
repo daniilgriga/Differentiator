@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include "tree.h"
@@ -24,10 +25,12 @@ struct Node_t* copy (struct Node_t* node);
 
 #define MAX_OPTIMIZATIONS 100
 
-struct Node_t* diff (struct Node_t* node)
+struct Node_t* diff (struct Node_t* node, struct Context_t* context)
 {
+    assert (node);
+
     if (node->type == NUM) return _NUM(0);
-    if (node->type == VAR) return _NUM(1);
+    if (node->type == ID)  return _NUM(1);
     if (node->type == ROOT) {;}
     if (node->type == OP)
         switch ((int) node->value)
@@ -36,7 +39,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _ADD (_dL, _dR);
 
-                tex_printf_tree (node, diff_node, "the derivative of the sum can be represented as follows: ", 'n');
+                tex_printf_tree (node, diff_node, context, "the derivative of the sum can be represented as follows: ", 'n');
 
                 return diff_node;
             }
@@ -45,7 +48,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _ADD ( _MUL (_dL, _cR), _MUL (_cL, _dR) );
 
-                tex_printf_tree (node, diff_node, "obviously, the derivative of multiplication looks like this: ", 'n');
+                tex_printf_tree (node, diff_node, context, "obviously, the derivative of multiplication looks like this: ", 'n');
 
                 return diff_node;
             }
@@ -55,16 +58,16 @@ struct Node_t* diff (struct Node_t* node)
                 tex_printf ("calculate the derivative of the fraction.\\newline ");
 
                 struct Node_t* u   = node->left;
-                struct Node_t* du  = diff (u);
+                struct Node_t* du  = diff (u, context);
 
-                tex_printf_tree (u, du, "the derivative of the numerator is calculated as follows: ", 'n');
+                tex_printf_tree (u, du, context, "the derivative of the numerator is calculated as follows: ", 'n');
 
                 struct Node_t* cu  = copy (u);
 
                 struct Node_t* v   = node->right;
-                struct Node_t* dv  = diff (v);
+                struct Node_t* dv  = diff (v, context);
 
-                tex_printf_tree (v, dv, "Karzhemanov said that the denominator is equal to: ", 'n');
+                tex_printf_tree (v, dv, context, "Karzhemanov said that the denominator is equal to: ", 'n');
 
                 struct Node_t* cv  = copy (v);
 
@@ -80,7 +83,7 @@ struct Node_t* diff (struct Node_t* node)
 
                 struct Node_t* diff_node = _DIV (duv_udv, v2);
 
-                tex_printf_tree (node, diff_node, "final differentiated fraction: ", 'n');
+                tex_printf_tree (node, diff_node, context, "final differentiated fraction: ", 'n');
 
                 return diff_node;
             }
@@ -94,7 +97,7 @@ struct Node_t* diff (struct Node_t* node)
                 {
                     struct Node_t* diff_node = _COMPOUND ( _MUL ( _cR, _POW (_cL, _SUB ( _cR, _NUM(1) ) ) ) );
 
-                    tex_printf_tree (node, diff_node, "Znamenskaya forbade doing this, but: ", 'n');
+                    tex_printf_tree (node, diff_node, context, "Znamenskaya forbade doing this, but: ", 'n');
 
                     return diff_node;
                 }
@@ -106,7 +109,7 @@ struct Node_t* diff (struct Node_t* node)
 
                     struct Node_t* diff_node = _MUL ( node_1, node_2 );
 
-                    tex_printf_tree (node, diff_node, "Znamenskaya left the audience after that: ", 'n');
+                    tex_printf_tree (node, diff_node, context, "Znamenskaya left the audience after that: ", 'n');
 
                     return diff_node;
                 }
@@ -120,7 +123,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _COMPOUND ( _COS ( _cL ) );
 
-                tex_printf_tree (node, diff_node, "every kindergartener in the USSR knew that: ", 'n');
+                tex_printf_tree (node, diff_node, context, "every kindergartener in the USSR knew that: ", 'n');
 
                 return diff_node;
             }
@@ -129,7 +132,7 @@ struct Node_t* diff (struct Node_t* node)
             {
                 struct Node_t* diff_node = _COMPOUND ( _MUL ( _NUM (-1), _SIN ( _cL ) ) );
 
-                tex_printf_tree (node, diff_node, "Ostap once said: ", 'n');
+                tex_printf_tree (node, diff_node, context, "Ostap once said: ", 'n');
 
                 return diff_node;
             }
@@ -293,7 +296,8 @@ $
 void verificator (struct Node_t* node, const char* filename, int line)
 {
     if (node->type == 0)
-        printf ("%s:%d: vasalam u have a problem: node [%p]: type = %d, value = %c (%lg)\n\n", filename, line, node, node->type, (int) node->value, node->value);
+        printf ("%s:%d: vasalam u have a problem: node [%p]: type = %d, value = %c (%lg)\n\n",
+                 filename, line, node, node->type, (int) node->value, node->value);
 
     if (node->left)  verificator (node->left, filename, line);
     if (node->right) verificator (node->right, filename, line);
@@ -345,7 +349,7 @@ int simplification_of_expression (struct Node_t* root, struct Node_t* parent)
 
 int find_x_in_node (struct Node_t* node, int counter)
 {
-    if (node->type == VAR && (int) node->value == 'x')
+    if (node->type == ID && (int) node->value == 'x')
         counter++;
 
     if (node->left)  find_x_in_node (node->left, counter);

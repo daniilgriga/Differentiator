@@ -59,7 +59,7 @@ int delete_node (struct Node_t* node)
     node->left  = NULL;
     node->right = NULL;
 
-    //free (node);
+    free (node);
 
     return 0;
 }
@@ -126,6 +126,7 @@ int print_tree_postorder (struct Node_t* node)
 int its_func_is_root (struct Node_t* node)
 {
     assert (node);
+    fprintf (stderr, BLUE_TEXT("IN its_func_is_root ") "node = [%p]\n", node);
 
     if (node->type == OP && (int) node->value == SIN)
         return 1;
@@ -139,7 +140,7 @@ int its_func_is_root (struct Node_t* node)
     return 0;
 }
 
-void print_func_in_tex (struct Node_t* node, struct Node_t* parent)
+void print_func_in_tex (struct Node_t* node, struct Node_t* parent, struct Context_t* context)
 {
     assert (node && "node is NULL in print_func");
 
@@ -170,7 +171,7 @@ void print_func_in_tex (struct Node_t* node, struct Node_t* parent)
    if (node->left)
     {
         tex_printf (" { ");
-        tex_printf_tree_inorder (node->left, node);
+        tex_printf_tree_inorder (node->left, node, context);
 
         if (parent != NULL && parent->value == POW)
             tex_printf (")");
@@ -181,7 +182,7 @@ void print_func_in_tex (struct Node_t* node, struct Node_t* parent)
     if (node->right)
     {
         tex_printf (" { ");
-        tex_printf_tree_inorder (node->right, node);
+        tex_printf_tree_inorder (node->right, node, context);
 
         if (parent != NULL && parent->value == POW)
             tex_printf (")");
@@ -190,15 +191,15 @@ void print_func_in_tex (struct Node_t* node, struct Node_t* parent)
     }
 }
 
-int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
+int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent, struct Context_t* context)
 {
     assert (node && "node is NULL in tex_printf_tree_inorder");
 
-    /*if (its_func_is_root (node))
+    if (its_func_is_root (node))
     {
-        print_func_in_tex (node, parent);
+        print_func_in_tex (node, parent, context);
         return 0;
-    }*/
+    }
 
     bool extra_brackets = 0;
 
@@ -254,13 +255,13 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
         if (extra_brackets == 1)
         {
             tex_printf (" { (");
-            tex_printf_tree_inorder (node->left, node);
+            tex_printf_tree_inorder (node->left, node, context);
             tex_printf (" } )");
         }
         else
         {
             tex_printf (" { ");
-            tex_printf_tree_inorder (node->left, node);
+            tex_printf_tree_inorder (node->left, node, context);
             tex_printf (" } ");
         }
     }
@@ -275,8 +276,10 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
             tex_printf (" \\over ");
         else if (node->type == OP && node->value == MUL && parent && (parent->value == SIN || parent->value == COS) )
             tex_printf (" ");
-        else
-            tex_printf (" %c ", (int) node->value);
+        else if (node->type == OP && (node->value == ADD || node->value == SUB))
+            tex_printf ("%c", (int) node->value);
+        else if (node->type == ID)
+            tex_printf ("%.*s", (int) context->name_table[(int) node->value].name.length, context->name_table[(int) node->value].name.str_pointer);
     }
 
     if (node->right)
@@ -284,13 +287,13 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
         if (extra_brackets == 1)
         {
             tex_printf (" { (");
-            tex_printf_tree_inorder (node->right, node);
+            tex_printf_tree_inorder (node->right, node, context);
             tex_printf (" } )");
         }
         else
         {
             tex_printf (" { ");
-            tex_printf_tree_inorder (node->right, node);
+            tex_printf_tree_inorder (node->right, node, context);
             tex_printf (" } ");
         }
     }
@@ -301,7 +304,7 @@ int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent)
     return 0;
 }
 
-void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, int first_equation)
+void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, struct Context_t* context, int first_equation)
 {
     //assert (node);
     //assert (diff_node);
@@ -309,39 +312,45 @@ void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, int f
     if (first_equation == 'y')
     {
         tex_printf ("$$ f(x) = {");
-        tex_printf_tree_inorder (node, NULL);
+        tex_printf_tree_inorder (node, NULL, context);
         tex_printf ("} $$");
     }
     else
     {
         tex_printf ("$$ ({");
-        tex_printf_tree_inorder (node, NULL);
+        tex_printf_tree_inorder (node, NULL, context);
 
         tex_printf ("})' = {");
 
-        fprintf (stderr, "diff_n = %p\n\n", diff_node);
-        tex_printf_tree_inorder (diff_node, NULL);
+        fprintf (stderr, "in tex_printf_expression: node   = [%p]\n", node);
+        fprintf (stderr, "in tex_printf_expression: diff_n = [%p]\n\n", diff_node);
+
+        tex_printf_tree_inorder (diff_node, NULL, context);
         tex_printf ("} $$\n");
     }
 }
 
-void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message, int first_equation)
+void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, struct Context_t* context, const char* message, int first_equation)
 {
-    //assert (node);
+
+    fprintf (stderr, "in tex_printf_tree: node = [%p] diif_node = [%p]\n\n", node, diff_node);
     //assert (diff_node);
-    //assert (message);
 
     //if (GlobalNode != diff_node)
     //{
+    if (node != NULL && diff_node != NULL)
+    {
+        fprintf (stderr, "in tex_printf_tree IN_IF: node = [%p] diif_node = [%p]\n\n", node, diff_node);
+        tex_printf ("%s", message);
+        tex_printf_expression (node, diff_node, context, first_equation);
 
-    tex_printf ("%s", message);
-    tex_printf_expression (node, diff_node, first_equation);
+        GlobalNode = diff_node;
+    }
 
     //}
     //else
     //    tex_printf ("%s... wait wait its the same, see above bro\\newline \\newline ", message);
 
-    GlobalNode = diff_node;
 }
 
 int priority (int op)
@@ -383,8 +392,8 @@ void print_tree_preorder_for_file (struct Node_t* node, FILE* filename)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (OP)   | value = '%c' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#20B2AA\"];\n",
              node, node, node->type, (int) node->value, node->left, node->right);
     else if (node->type == ID)
-        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (ID)   | value = '' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
-             node, node, node->type /*, (int) node->value*/, node->left, node->right);
+        fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (ID)   | number of name in name table = '%lg' | { left = [%p] | right = [%p] } }\"; style = filled; fillcolor = \"#F00000\"];\n",
+             node, node, node->type, node->value, node->left, node->right);
     else if (node->type == ROOT)
         fprintf (filename, "node%p [shape=Mrecord; label = \" { [%p] | type = %d (ROOT) | value = '%lg' | { son_node = [%p] } }\"; style = filled; fillcolor = \"#F0FFFF\"];\n",
              node, node, node->type, node->value, node->left);

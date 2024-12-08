@@ -1,7 +1,7 @@
 #ifndef DIFF_H_
 #define DIFF_H_
 
-struct Node_t* diff (struct Node_t* node);
+struct Node_t* diff (struct Node_t* node, struct Context_t* context);
 
 int simplification_typical_operations (struct Node_t* root, struct Node_t* parent);
 

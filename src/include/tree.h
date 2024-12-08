@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tokens.h"
+
 struct Node_t
 {
     int type;
@@ -24,17 +26,17 @@ int print_tree_preorder    (struct Node_t* node, FILE* filename);
 
 int print_tree_postorder   (struct Node_t* node);
 
-int  tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent);
+int tex_printf_tree_inorder (struct Node_t* node, struct Node_t* parent, struct Context_t* context);
 
-void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, int first_equation);
+void tex_printf_expression (struct Node_t* node, struct Node_t* diff_node, struct Context_t* context, int first_equation);
 
-void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, const char* message, int first_equation);
+void tex_printf_tree (struct Node_t* node, struct Node_t* diff_node, struct Context_t* context, const char* message, int first_equation);
 
 int priority (int op);
 
 int its_func_is_root (struct Node_t* node);
 
-void print_func_in_tex (struct Node_t* node, struct Node_t* parent);
+void print_func_in_tex (struct Node_t* node, struct Node_t* parent, struct Context_t* context);
 
 int delete_sub_tree       (struct Node_t* node);
 

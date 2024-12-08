@@ -12,12 +12,12 @@
 #define _NUM(value)       new_node (NUM, (value), NULL, NULL)
 #define _ID(value)        new_node (ID,  (value), NULL, NULL)
 
-#define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left) )
+#define _COMPOUND(diff_res) _MUL (diff_res, diff (node->left, context) )
 
 #define _L         node->left
 #define _R         node->right
-#define _dL  diff (node->left)
-#define _dR  diff (node->right)
+#define _dL  diff (node->left, context)
+#define _dR  diff (node->right, context)
 #define _cL  copy (node->left)
 #define _cR  copy (node->right)
 

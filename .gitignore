@@ -6,3 +6,4 @@ src/test
 src/output.log
 *.out
 *.json
+src/tkns
