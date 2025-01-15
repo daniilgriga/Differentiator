@@ -13,13 +13,14 @@ int Position =  0;
 #define MOVE_POSITION Position++
 
 /*         GRAMMAR
- *  G ::= E
- *  E ::= T{['+''-']T}*
- *  T ::= P{['*''/']P}*
- *  P ::= '('E')' | V | N
+ *    G ::= E
+ *    E ::= T {['+''-']T}*
+ *    T ::= P {['*''/']P}*
+ *    P ::= '('E')' | Id | N | Pow
+ *  Pow ::= P {['^']P}*
  *
- *  Id ::= ['a'-'z']+
- *  N  ::= ['0'-'9']+
+ *   Id ::= ['a'-'z']+
+ *    N ::= ['0'-'9']+
  */
 
 static struct Node_t*  GetE (struct Context_t* context);
@@ -31,7 +32,7 @@ static struct Node_t* GetId (struct Context_t* context);
 static struct Node_t* GetFunc (struct Context_t* context);
 static struct Node_t* GetPow  (struct Context_t* context);
 
-static void SyntaxError (struct Context_t* context, int line);
+static void SyntaxError (struct Context_t* context, const char* filename const char* func, int line);
 
 #define _IS_OP(val)  ( context->token[Position].type  == OP && \
                        context->token[Position].value == (val) )
@@ -41,7 +42,7 @@ struct Node_t* GetG (struct Context_t* context)
     struct Node_t* val = GetE (context);
 
     if ( !_IS_OP('$') )
-        SyntaxError (context, __LINE__); // TODO str in format printf;
+        SyntaxError (context, __FILE__, __FUNCTION__, __LINE__); // TODO str in format printf;
 
     MOVE_POSITION;
 
@@ -117,7 +118,7 @@ static struct Node_t* GetP (struct Context_t* context)
         struct Node_t* val = GetE (context);
 
         if ( !_IS_OP (CL_BR) )
-            SyntaxError (context, __LINE__);
+            SyntaxError (context, __FILE__, __FUNCTION__, __LINE__);
 
         MOVE_POSITION;
 
@@ -189,7 +190,7 @@ static struct Node_t* GetFunc (struct Context_t* context)
 
         node_E = GetE (context);
         if ( !_IS_OP (CL_BR))
-            SyntaxError (context, __LINE__);
+            SyntaxError (context, __FILE__, __FUNCTION__, __LINE__);
 
         MOVE_POSITION;
 
@@ -201,13 +202,13 @@ static struct Node_t* GetFunc (struct Context_t* context)
         return node_F;
     }
     else
-        SyntaxError (context, __LINE__);
+        SyntaxError (context, __FILE__, __FUNCTION__, __LINE__);
 }
 
-static void SyntaxError (struct Context_t* context, int line)
+static void SyntaxError (struct Context_t* context, const char* filename const char* func, int line)
 {
-    fprintf (stderr, "ERROR in read: SyntaxError in %d line, CUR = %.10s..., SYMBOL = %c (%lg)\n\n",
-                     line, context->token[Position].str, (int) context->token[Position].value, context->token[Position].value);
+    fprintf (stderr, PURPLE_TEXT("%s: %s: %d: ") RED_TEXT("ERROR in read >>> SYNTAX-ERROR ") "CUR = %.10s..., SYMBOL = %c (%lg)\n\n",
+                     filename, func, line, context->token[Position].str, (int) context->token[Position].value, context->token[Position].value);
 
     exit (1);
 }
